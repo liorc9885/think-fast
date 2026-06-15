@@ -194,7 +194,7 @@ function drawBurger(x, y, size) {
   ctx.fill();
   // sesame seeds
   ctx.fillStyle = '#fff3c0';
-  [[−8*s,−22*s],[0,−24*s],[8*s,−22*s]].forEach(([sx,sy]) => {
+  [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
     ctx.beginPath(); ctx.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); ctx.fill();
   });
 
