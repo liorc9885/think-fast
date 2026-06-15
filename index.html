@@ -1930,7 +1930,7 @@ function drawFloatingTexts() {
 // ── Burger spawn ──────────────────────────────────────────────────────────────
 function spawnBurger() {
   const size = 34 + Math.random() * 16;
-  const speed = (1.5 + level * 0.4) * (0.85 + Math.random() * 0.3);
+  const speed = (3.0 + level * 0.8) * (0.85 + Math.random() * 0.3);
   burgers.push({
     x: size + Math.random() * (W - size * 2),
     y: -size, size, speed,
@@ -1942,7 +1942,7 @@ function spawnBurger() {
 // ── Pizza spawn ───────────────────────────────────────────────────────────────
 function spawnPizza() {
   const size = 32 + Math.random() * 14;
-  const speed = (1.2 + level * 0.35) * (0.85 + Math.random() * 0.3);
+  const speed = (2.0 + level * 0.55) * (0.85 + Math.random() * 0.3);
   pizzas.push({
     x: size + Math.random() * (W - size * 2),
     y: -size, size, speed,
