@@ -663,6 +663,17 @@ function clampBasket(x) {
 }
 
 // ── Input ────────────────────────────────────────────────────────────────────
+const keys = {};
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    keys[e.key] = true;
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => {
+  keys[e.key] = false;
+});
+
 canvas.addEventListener('mousemove', e => {
   if (!running) return;
   const rect = canvas.getBoundingClientRect();
@@ -3018,6 +3029,8 @@ function checkLevel() {
 // ── Main loop ─────────────────────────────────────────────────────────────────
 function update() {
   frameCount++;
+  if (keys['ArrowLeft'])  basketX = clampBasket(basketX - 8);
+  if (keys['ArrowRight']) basketX = clampBasket(basketX + 8);
   updateClouds();
   updateParticles();
   updateFloatingTexts();
