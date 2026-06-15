@@ -509,13 +509,19 @@ const SKINS = [
   { id: 'cool',      name: 'קול',         price: 8,   tier: 1, requireOwned: 0, emoji: '💙' },
   { id: 'fire',      name: 'אש',          price: 12,  tier: 1, requireOwned: 0, emoji: '🔥' },
   { id: 'forest',    name: 'יער',         price: 15,  tier: 1, requireOwned: 0, emoji: '🌿' },
+  { id: 'snow',      name: 'שלג',         price: 10,  tier: 1, requireOwned: 0, emoji: '❄️' },
+  { id: 'sand',      name: 'חול',         price: 14,  tier: 1, requireOwned: 0, emoji: '🏜️' },
   { id: 'ocean',     name: 'אוקיינוס',   price: 28,  tier: 2, requireOwned: 2, emoji: '🌊' },
   { id: 'galaxy',    name: 'גלקסיה',     price: 38,  tier: 2, requireOwned: 2, emoji: '🌌' },
   { id: 'gold',      name: 'זהב',         price: 48,  tier: 2, requireOwned: 2, emoji: '👑' },
+  { id: 'lava',      name: 'לבה',         price: 32,  tier: 2, requireOwned: 2, emoji: '🌋' },
+  { id: 'candy',     name: 'ממתק',        price: 44,  tier: 2, requireOwned: 2, emoji: '🍭' },
   { id: 'rainbow',   name: 'קשת',         price: 62,  tier: 3, requireOwned: 5, emoji: '🌈' },
   { id: 'crystal',   name: 'קריסטל',     price: 78,  tier: 3, requireOwned: 5, emoji: '💎' },
   { id: 'dragon',    name: 'דרקון',       price: 92,  tier: 3, requireOwned: 5, emoji: '🐉' },
+  { id: 'storm',     name: 'סופה',        price: 72,  tier: 3, requireOwned: 5, emoji: '⚡' },
   { id: 'neon',      name: 'ניאון',       price: 115, tier: 4, requireOwned: 9, emoji: '✨' },
+  { id: 'shadow',    name: 'צל',          price: 140, tier: 4, requireOwned: 9, emoji: '🌑' },
   { id: 'legendary', name: 'אגדי',        price: 160, tier: 4, requireOwned: 9, emoji: '🏆' },
 ];
 
@@ -527,10 +533,14 @@ const BURGER_SKINS = [
   { id: 'classic',    name: 'קלאסי',    price: 0,   tier: 0, requireOwned: 0, emoji: '🍔' },
   { id: 'spicy',      name: 'חריף',     price: 10,  tier: 1, requireOwned: 0, emoji: '🌶️' },
   { id: 'veggie',     name: 'טבעוני',   price: 15,  tier: 1, requireOwned: 0, emoji: '🥗' },
+  { id: 'snow',       name: 'שלג',      price: 12,  tier: 1, requireOwned: 0, emoji: '❄️' },
   { id: 'gold',       name: 'זהב',      price: 35,  tier: 2, requireOwned: 2, emoji: '👑' },
   { id: 'ocean',      name: 'ים',       price: 45,  tier: 2, requireOwned: 2, emoji: '🐟' },
+  { id: 'lava',       name: 'לבה',      price: 40,  tier: 2, requireOwned: 2, emoji: '🌋' },
+  { id: 'candy',      name: 'ממתק',     price: 55,  tier: 3, requireOwned: 4, emoji: '🍭' },
   { id: 'galaxy',     name: 'גלקסיה',  price: 60,  tier: 3, requireOwned: 4, emoji: '🌌' },
   { id: 'neon',       name: 'ניאון',    price: 80,  tier: 3, requireOwned: 5, emoji: '✨' },
+  { id: 'shadow',     name: 'צל',       price: 90,  tier: 3, requireOwned: 5, emoji: '🌑' },
   { id: 'legendary',  name: 'אגדי',     price: 120, tier: 4, requireOwned: 7, emoji: '🏆' },
 ];
 
@@ -800,6 +810,122 @@ function drawBasketSkin(c, x, y, w, h, skinId) {
       const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
       rg.addColorStop(0, '#ff6b00'); rg.addColorStop(0.5, '#ffe87c'); rg.addColorStop(1, '#ff6b00');
       rim(rg, '#8b6914');
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'snow': {
+      c.shadowColor = '#a8d8f0'; c.shadowBlur = 10;
+      const g = c.createLinearGradient(x, y - hh, x, y + hh);
+      g.addColorStop(0, '#dff0fb'); g.addColorStop(1, '#a8d4ee');
+      c.fillStyle = g; trapezoid(); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = 'rgba(255,255,255,0.8)';
+      [[-28,-8],[0,-14],[22,-6],[-14,6],[10,4],[28,10],[-6,18],[16,16]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(x + sx*(w/90), y + sy*(h/44), 2, 0, Math.PI*2); c.fill();
+      });
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#b8e4f9'); rg.addColorStop(0.5, '#ffffff'); rg.addColorStop(1, '#b8e4f9');
+      rim(rg, '#7ec8e3');
+      break;
+    }
+
+    case 'sand': {
+      const g = c.createLinearGradient(x, y - hh, x, y + hh);
+      g.addColorStop(0, '#e8c97a'); g.addColorStop(1, '#c4943a');
+      c.fillStyle = g; trapezoid(); c.fill();
+      c.fillStyle = 'rgba(160,110,40,0.4)';
+      [[-24,-4],[8,-12],[28,-2],[-8,8],[22,12],[-20,14],[4,20],[-10,-8]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(x + sx*(w/90), y + sy*(h/44), 1.5, 0, Math.PI*2); c.fill();
+      });
+      weaveLines('#b07a30');
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#e8c97a'); rg.addColorStop(0.5, '#f5e0a0'); rg.addColorStop(1, '#e8c97a');
+      rim(rg, '#a07030');
+      break;
+    }
+
+    case 'lava': {
+      c.shadowColor = '#ff4400'; c.shadowBlur = 16;
+      const g = c.createLinearGradient(x, y - hh, x, y + hh);
+      g.addColorStop(0, '#1a0600'); g.addColorStop(0.5, '#3d0c00'); g.addColorStop(1, '#0a0200');
+      c.fillStyle = g; trapezoid(); c.fill();
+      c.save(); trapezoid(); c.clip();
+      c.strokeStyle = '#ff6600'; c.lineWidth = 1.5;
+      c.shadowColor = '#ff4400'; c.shadowBlur = 8;
+      [
+        [[-30,-10],[-10,2],[5,15],[25,5]],
+        [[10,-8],[20,5],[30,15]],
+        [[-20,8],[-5,20],[10,10]]
+      ].forEach(pts => {
+        c.beginPath();
+        pts.forEach(([px,py], i) => {
+          const ax = x + px*(w/90), ay = y + py*(h/44);
+          i === 0 ? c.moveTo(ax, ay) : c.lineTo(ax, ay);
+        });
+        c.stroke();
+      });
+      c.restore();
+      c.shadowColor = '#ff4400'; c.shadowBlur = 16;
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#ff4400'); rg.addColorStop(0.5, '#ff9900'); rg.addColorStop(1, '#ff4400');
+      rim(rg, '#cc3300');
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'candy': {
+      const g = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      g.addColorStop(0, '#ff69b4'); g.addColorStop(0.2, '#ffb347');
+      g.addColorStop(0.4, '#ff69b4'); g.addColorStop(0.6, '#87ceeb');
+      g.addColorStop(0.8, '#ff69b4'); g.addColorStop(1, '#ffb347');
+      c.fillStyle = g; trapezoid(); c.fill();
+      weaveLines('rgba(255,255,255,0.55)');
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#ff69b4'); rg.addColorStop(0.5, '#ffffff'); rg.addColorStop(1, '#ff69b4');
+      rim(rg, '#e05090');
+      break;
+    }
+
+    case 'storm': {
+      c.shadowColor = '#4488ff'; c.shadowBlur = 14;
+      const g = c.createLinearGradient(x, y - hh, x, y + hh);
+      g.addColorStop(0, '#1a1a2e'); g.addColorStop(1, '#0d0d1a');
+      c.fillStyle = g; trapezoid(); c.fill();
+      c.save(); trapezoid(); c.clip();
+      c.strokeStyle = '#4488ff'; c.lineWidth = 1.5;
+      c.shadowColor = '#4488ff'; c.shadowBlur = 10;
+      [
+        [[-15,-14],[-5,2],[2,-4],[12,16]],
+        [[8,-10],[16,4],[20,-2],[28,14]]
+      ].forEach(pts => {
+        c.beginPath();
+        pts.forEach(([px,py], i) => {
+          const ax = x + px*(w/90), ay = y + py*(h/44);
+          i === 0 ? c.moveTo(ax, ay) : c.lineTo(ax, ay);
+        });
+        c.stroke();
+      });
+      c.restore();
+      c.shadowColor = '#4488ff'; c.shadowBlur = 14;
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#2244cc'); rg.addColorStop(0.5, '#88aaff'); rg.addColorStop(1, '#2244cc');
+      rim(rg, '#1133aa');
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'shadow': {
+      c.shadowColor = '#6600cc'; c.shadowBlur = 22;
+      const g = c.createLinearGradient(x, y - hh, x, y + hh);
+      g.addColorStop(0, '#080808'); g.addColorStop(1, '#030303');
+      c.fillStyle = g; trapezoid(); c.fill();
+      c.shadowBlur = 0;
+      weaveLines('rgba(100,0,180,0.35)');
+      c.shadowColor = '#9900ff'; c.shadowBlur = 18;
+      const rg = c.createLinearGradient(x - hw, 0, x + hw, 0);
+      rg.addColorStop(0, '#440088'); rg.addColorStop(0.5, '#aa44ff'); rg.addColorStop(1, '#440088');
+      rim(rg, '#220066');
       c.shadowBlur = 0;
       break;
     }
@@ -1354,6 +1480,93 @@ function drawBurger(c, x, y, size, highlight, skinId) {
       // bottom bun
       c.fillStyle = '#ff8c00';
       c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'snow': {
+      if (highlight) { c.shadowColor = '#a8d8f0'; c.shadowBlur = 18; }
+      c.fillStyle = '#dff0fb';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#aaddff'; c.shadowColor = '#88ccff'; c.shadowBlur = 6;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 2*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowBlur = 0;
+      c.fillStyle = '#b8e4f9';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#8ec8e8';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#e8f4ff';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#c8e8f8';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
+
+    case 'lava': {
+      c.shadowColor = '#ff4400'; c.shadowBlur = 20;
+      if (highlight) c.shadowBlur = 30;
+      c.fillStyle = '#1a0600';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#ff6600'; c.shadowColor = '#ff4400'; c.shadowBlur = 10;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 2*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#ff4400'; c.shadowBlur = 20;
+      c.fillStyle = '#cc3300';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#0d0200';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#ff6600';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#1a0600';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'candy': {
+      if (highlight) { c.shadowColor = '#ff69b4'; c.shadowBlur = 20; }
+      c.fillStyle = '#ff85c2';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      [['#ff4444',[-8*s,-22*s]],['#ffaa00',[0,-24*s]],['#44ff88',[8*s,-22*s]]].forEach(([col,[sx,sy]]) => {
+        c.fillStyle = col;
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      c.fillStyle = '#88eecc';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#cc44aa';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#ffee44';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#ff85c2';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
+
+    case 'shadow': {
+      c.shadowColor = '#9900ff'; c.shadowBlur = 20;
+      if (highlight) c.shadowBlur = 30;
+      c.fillStyle = '#050505';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      c.strokeStyle = '#440088'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.stroke();
+      c.fillStyle = '#aa44ff'; c.shadowColor = '#aa44ff'; c.shadowBlur = 8;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#9900ff'; c.shadowBlur = 20;
+      c.fillStyle = '#0a0010';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#020202';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#6600cc';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#050505';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.strokeStyle = '#440088'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.stroke();
       c.shadowBlur = 0;
       break;
     }
