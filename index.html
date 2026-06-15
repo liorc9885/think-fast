@@ -2271,6 +2271,7 @@ function draw() {
 }
 
 function loop() {
+  if (!running) return;
   update();
   draw();
   animId = requestAnimationFrame(loop);
