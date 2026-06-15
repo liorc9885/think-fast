@@ -102,7 +102,7 @@
 
 <div id="hud">
   <span>⭐ תפוס: <b id="score-display">0</b></span>
-  <span>❤️ חיים: <b id="lives-display">3</b></span>
+  <span>❤️ חיים: <b id="lives-display">1</b></span>
   <span>⚡ רמה: <b id="level-display">1</b></span>
 </div>
 
@@ -112,7 +112,7 @@
   <div id="overlay">
     <div id="message-box">
       <h2>🍔 המבורגר נופל!</h2>
-      <p>הזז את הסל כדי לתפוס המבורגרים!<br>אל תפספס יותר מ-3 🍔</p>
+      <p>הזז את הסל כדי לתפוס המבורגרים!<br>פספוס אחד = סוף משחק! 🍔</p>
       <button id="start-btn" onclick="startGame()">▶ התחל משחק</button>
     </div>
   </div>
@@ -131,7 +131,7 @@ const levelEl = document.getElementById('level-display');
 const overlay = document.getElementById('overlay');
 
 // ── State ────────────────────────────────────────────────────────────────────
-let score = 0, lives = 3, level = 1, missCount = 0;
+let score = 0, lives = 1, level = 1, missCount = 0;
 let running = false, animId = null;
 let burgers = [], particles = [], clouds = [];
 let spawnTimer = 0, spawnInterval = 90;
@@ -431,12 +431,12 @@ function gameOver() {
 }
 
 window.startGame = function() {
-  score = 0; lives = 3; level = 1; missCount = 0;
+  score = 0; lives = 1; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
   burgers = []; particles = [];
   basketX = W / 2;
   scoreEl.textContent = 0;
-  livesEl.textContent = 3;
+  livesEl.textContent = 1;
   levelEl.textContent = 1;
   overlay.style.display = 'none';
   initClouds();
