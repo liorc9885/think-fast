@@ -133,7 +133,7 @@ const overlay = document.getElementById('overlay');
 // ── State ────────────────────────────────────────────────────────────────────
 let score = 0, lives = 3, level = 1, missCount = 0;
 let running = false, animId = null;
-let burgers = [], particles = [], clouds = [];
+let burgers = [], particles = [], clouds = [], floatingTexts = [];
 let spawnTimer = 0, spawnInterval = 90;
 let frameCount = 0;
 
@@ -273,6 +273,30 @@ function drawParticles() {
   });
 }
 
+function spawnFloatingText(x, y, text) {
+  floatingTexts.push({ x, y, text, life: 1 });
+}
+
+function updateFloatingTexts() {
+  floatingTexts = floatingTexts.filter(t => t.life > 0);
+  floatingTexts.forEach(t => { t.y -= 1.5; t.life -= 0.025; });
+}
+
+function drawFloatingTexts() {
+  floatingTexts.forEach(t => {
+    ctx.save();
+    ctx.globalAlpha = t.life;
+    ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#2c7a00';
+    ctx.lineWidth = 4;
+    ctx.textAlign = 'center';
+    ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+  });
+}
+
 // ── Burger spawn ──────────────────────────────────────────────────────────────
 function spawnBurger() {
   const size = 34 + Math.random() * 16;
@@ -302,6 +326,7 @@ function update() {
   frameCount++;
   updateClouds();
   updateParticles();
+  updateFloatingTexts();
 
   spawnTimer++;
   if (spawnTimer >= spawnInterval) {
@@ -321,6 +346,7 @@ function update() {
         score++;
         scoreEl.textContent = score;
         spawnParticles(b.x, BASKET_Y - BASKET_H / 2);
+        spawnFloatingText(b.x, BASKET_Y - BASKET_H / 2 - 20, '✔ ממשיך! +1');
         checkLevel();
         return false;
       } else if (b.y - b.size > H) {
@@ -404,6 +430,7 @@ function draw() {
   burgers.forEach(b => drawBurger(b.x, b.y, b.size));
   drawBasket();
   drawParticles();
+  drawFloatingTexts();
 }
 
 function loop() {
@@ -433,7 +460,7 @@ function gameOver() {
 window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
-  burgers = []; particles = [];
+  burgers = []; particles = []; floatingTexts = [];
   basketX = W / 2;
   scoreEl.textContent = 0;
   livesEl.textContent = 3;
