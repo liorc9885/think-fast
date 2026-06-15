@@ -45,8 +45,9 @@
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
       background: transparent;
-      cursor: none;
+      cursor: pointer;
       display: block;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #overlay {
@@ -100,7 +101,7 @@
 <h1>🍔 המבורגר נופל! 🍔</h1>
 
 <div id="hud">
-  <span>⭐ ניקוד: <b id="score-display">0</b></span>
+  <span>⭐ תפוס: <b id="score-display">0</b></span>
   <span>❤️ חיים: <b id="lives-display">3</b></span>
   <span>⚡ רמה: <b id="level-display">1</b></span>
 </div>
@@ -111,13 +112,13 @@
   <div id="overlay">
     <div id="message-box">
       <h2>🍔 המבורגר נופל!</h2>
-      <p>תפוס כמה שיותר המבורגרים!<br>אל תפספס יותר מ-3 🍔</p>
+      <p>לחץ על המבורגרים כדי לתפוס אותם!<br>אל תפספס יותר מ-3 🍔</p>
       <button id="start-btn" onclick="startGame()">▶ התחל משחק</button>
     </div>
   </div>
 </div>
 
-<p id="instructions">🖱️ הזז את העכבר / 👆 גע במסך כדי להזיז את הסל</p>
+<p id="instructions">🖱️ לחץ / 👆 גע על המבורגרים כדי לתפוס אותם!</p>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
@@ -133,28 +134,41 @@ const overlay = document.getElementById('overlay');
 let score = 0, lives = 3, level = 1, missCount = 0;
 let running = false, animId = null;
 let burgers = [], particles = [], clouds = [];
-let basketX = W / 2;
-let spawnTimer = 0, spawnInterval = 90; // frames
+let spawnTimer = 0, spawnInterval = 90;
 let frameCount = 0;
 
-// ── Basket ───────────────────────────────────────────────────────────────────
-const BASKET_W = 80, BASKET_H = 50;
-const basket = {
-  y: H - BASKET_H - 10,
-  get x() { return basketX - BASKET_W / 2; }
-};
+// ── Catch burger at canvas coordinate ────────────────────────────────────────
+function catchBurgerAt(mx, my) {
+  for (let i = burgers.length - 1; i >= 0; i--) {
+    const b = burgers[i];
+    const dist = Math.hypot(mx - b.x, my - b.y);
+    if (dist < b.size * 0.75) {
+      score++;
+      scoreEl.textContent = score;
+      spawnParticles(b.x, b.y);
+      checkLevel();
+      burgers.splice(i, 1);
+      return;
+    }
+  }
+}
 
 // ── Input ────────────────────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', e => {
+canvas.addEventListener('click', e => {
+  if (!running) return;
   const rect = canvas.getBoundingClientRect();
-  basketX = Math.max(BASKET_W/2, Math.min(W - BASKET_W/2,
-    (e.clientX - rect.left) * (W / rect.width)));
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top)  * (H / rect.height);
+  catchBurgerAt(mx, my);
 });
-canvas.addEventListener('touchmove', e => {
+
+canvas.addEventListener('touchstart', e => {
+  if (!running) return;
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
-  basketX = Math.max(BASKET_W/2, Math.min(W - BASKET_W/2,
-    (e.touches[0].clientX - rect.left) * (W / rect.width)));
+  const mx = (e.touches[0].clientX - rect.left) * (W / rect.width);
+  const my = (e.touches[0].clientY - rect.top)  * (H / rect.height);
+  catchBurgerAt(mx, my);
 }, { passive: false });
 
 // ── Clouds ───────────────────────────────────────────────────────────────────
@@ -174,18 +188,23 @@ function drawCloud(c) {
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.beginPath();
-  ctx.arc(c.x,        c.y,      c.r,      0, Math.PI * 2);
-  ctx.arc(c.x + c.r*0.8, c.y - c.r*0.3, c.r*0.7, 0, Math.PI * 2);
-  ctx.arc(c.x - c.r*0.8, c.y - c.r*0.2, c.r*0.6, 0, Math.PI * 2);
+  ctx.arc(c.x,             c.y,           c.r,       0, Math.PI * 2);
+  ctx.arc(c.x + c.r*0.8,  c.y - c.r*0.3, c.r*0.7,   0, Math.PI * 2);
+  ctx.arc(c.x - c.r*0.8,  c.y - c.r*0.2, c.r*0.6,   0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
 // ── Burger drawing ────────────────────────────────────────────────────────────
-function drawBurger(x, y, size) {
+function drawBurger(x, y, size, highlight) {
   const s = size / 40;
   ctx.save();
   ctx.translate(x, y);
+
+  if (highlight) {
+    ctx.shadowColor = '#ffe066';
+    ctx.shadowBlur = 18;
+  }
 
   // top bun
   ctx.fillStyle = '#e8a020';
@@ -221,56 +240,6 @@ function drawBurger(x, y, size) {
   ctx.beginPath();
   ctx.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2);
   ctx.fill();
-
-  ctx.restore();
-}
-
-// ── Basket drawing ────────────────────────────────────────────────────────────
-function drawBasket() {
-  const bx = basket.x, by = basket.y;
-
-  // shadow
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath();
-  ctx.ellipse(basketX, by + BASKET_H + 4, BASKET_W/2, 8, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // body
-  ctx.save();
-  ctx.fillStyle = '#c0392b';
-  ctx.strokeStyle = '#922b21';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(bx + 6, by);
-  ctx.lineTo(bx + BASKET_W - 6, by);
-  ctx.lineTo(bx + BASKET_W, by + BASKET_H);
-  ctx.lineTo(bx, by + BASKET_H);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // weave lines
-  ctx.strokeStyle = '#922b21';
-  ctx.lineWidth = 1.5;
-  for (let i = 1; i < 4; i++) {
-    const ly = by + (BASKET_H / 4) * i;
-    ctx.beginPath(); ctx.moveTo(bx + i*1.5, ly); ctx.lineTo(bx + BASKET_W - i*1.5, ly); ctx.stroke();
-  }
-  for (let i = 1; i < 5; i++) {
-    const lx = bx + (BASKET_W / 5) * i;
-    ctx.beginPath(); ctx.moveTo(lx, by); ctx.lineTo(lx + 4, by + BASKET_H); ctx.stroke();
-  }
-
-  // rim
-  ctx.fillStyle = '#e74c3c';
-  ctx.beginPath();
-  ctx.roundRect(bx - 4, by - 6, BASKET_W + 8, 12, 6);
-  ctx.fill();
-  ctx.strokeStyle = '#922b21';
-  ctx.lineWidth = 2;
-  ctx.stroke();
 
   ctx.restore();
 }
@@ -336,7 +305,6 @@ function checkLevel() {
 // ── Main loop ─────────────────────────────────────────────────────────────────
 function update() {
   frameCount++;
-
   updateClouds();
   updateParticles();
 
@@ -351,21 +319,7 @@ function update() {
     b.x += Math.sin(b.wobble) * 0.8;
     b.y += b.speed;
 
-    // catch check
-    if (
-      b.y + b.size/2 >= basket.y &&
-      b.y - b.size/2 <= basket.y + BASKET_H &&
-      b.x + b.size/2 >= basket.x &&
-      b.x - b.size/2 <= basket.x + BASKET_W
-    ) {
-      score++;
-      scoreEl.textContent = score;
-      spawnParticles(b.x, b.y);
-      checkLevel();
-      return false;
-    }
-
-    // missed
+    // missed — fell off screen
     if (b.y - b.size > H) {
       missCount++;
       lives--;
@@ -378,7 +332,6 @@ function update() {
 }
 
 function drawBackground() {
-  // sky gradient
   const sky = ctx.createLinearGradient(0, 0, 0, H);
   sky.addColorStop(0,   '#87CEEB');
   sky.addColorStop(0.7, '#b8e4f9');
@@ -388,7 +341,6 @@ function drawBackground() {
 
   clouds.forEach(drawCloud);
 
-  // ground
   ctx.fillStyle = '#76b041';
   ctx.beginPath();
   ctx.ellipse(W/2, H + 10, W * 0.6, 30, 0, 0, Math.PI*2);
@@ -401,7 +353,6 @@ function draw() {
   ctx.clearRect(0, 0, W, H);
   drawBackground();
   burgers.forEach(b => drawBurger(b.x, b.y, b.size));
-  drawBasket();
   drawParticles();
 }
 
@@ -423,7 +374,7 @@ function gameOver() {
   showOverlay(`
     <div id="message-box">
       <h2>💀 המשחק נגמר!</h2>
-      <p>ניקוד סופי: <b>${score}</b> 🍔<br>הגעת לרמה ${level}!</p>
+      <p>תפסת <b>${score}</b> המבורגרים 🍔<br>הגעת לרמה ${level}!</p>
       <button onclick="startGame()">🔄 שחק שוב</button>
     </div>
   `);
@@ -433,7 +384,6 @@ window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
   burgers = []; particles = [];
-  basketX = W / 2;
   scoreEl.textContent = 0;
   livesEl.textContent = 3;
   levelEl.textContent = 1;
