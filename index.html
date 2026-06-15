@@ -349,8 +349,8 @@ function update() {
         spawnFloatingText(b.x, BASKET_Y - BASKET_H / 2 - 20, '✔ ממשיך! +1');
         checkLevel();
         return false;
-      } else if (b.y - b.size > H) {
-        // missed entirely
+      } else if (b.y - b.size * 0.5 > BASKET_Y + BASKET_H / 2) {
+        // missed: burger passed below basket
         missCount++;
         lives--;
         livesEl.textContent = lives;
@@ -434,6 +434,7 @@ function draw() {
 }
 
 function loop() {
+  if (!running) return;
   update();
   draw();
   animId = requestAnimationFrame(loop);
