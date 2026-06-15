@@ -424,45 +424,18 @@
 
     <!-- Basket skins panel -->
     <div id="panel-basket">
-      <div id="free-skin-bar">
-        <div id="free-skin-label">
-          <span>🎁 כל 10 רכישות = סקין חינם!</span>
-          <span id="purchase-count-text">0 / 10</span>
-        </div>
-        <div id="purchase-progress-wrap">
-          <div id="purchase-progress" style="width:0%"></div>
-        </div>
-      </div>
       <div id="owned-info">סקינים בבעלותך: <b id="owned-count">1</b></div>
       <div id="skin-grid"></div>
     </div>
 
     <!-- Burger skins panel -->
     <div id="panel-burger" style="display:none">
-      <div id="free-skin-bar" style="margin:14px 20px 0;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);border-radius:14px;padding:10px 14px;">
-        <div id="burger-free-skin-label" style="font-size:0.85rem;color:#ffd700;margin-bottom:7px;display:flex;justify-content:space-between;">
-          <span>🎁 כל 5 רכישות = סקין חינם!</span>
-          <span id="burger-purchase-count-text">0 / 5</span>
-        </div>
-        <div id="burger-purchase-progress-wrap">
-          <div id="burger-purchase-progress" style="width:0%"></div>
-        </div>
-      </div>
       <div id="burger-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני המבורגר שלך: <b id="burger-owned-count">1</b></div>
       <div id="burger-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
     </div>
 
     <!-- Pizza skins panel -->
     <div id="panel-pizza" style="display:none">
-      <div id="free-skin-bar" style="margin:14px 20px 0;background:rgba(220,80,0,0.08);border:1px solid rgba(220,80,0,0.2);border-radius:14px;padding:10px 14px;">
-        <div id="pizza-free-skin-label" style="font-size:0.85rem;color:#ff8c42;margin-bottom:7px;display:flex;justify-content:space-between;">
-          <span>🎁 כל 5 רכישות = סקין חינם!</span>
-          <span id="pizza-purchase-count-text">0 / 5</span>
-        </div>
-        <div id="pizza-purchase-progress-wrap">
-          <div id="pizza-purchase-progress" style="width:0%;height:8px;background:linear-gradient(90deg,#ff6b35,#ff8c42);border-radius:4px;transition:width 0.4s"></div>
-        </div>
-      </div>
       <div id="pizza-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני הפיצה שלך: <b id="pizza-owned-count">1</b></div>
       <div id="pizza-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
     </div>
@@ -1228,11 +1201,6 @@ function renderShop() {
   const owned = shopData.ownedSkins.length;
   document.getElementById('shop-coins-val').textContent = shopData.coins;
   document.getElementById('owned-count').textContent = owned;
-  const pct = (shopData.purchaseCount % 10) / 10 * 100;
-  document.getElementById('purchase-progress').style.width = pct + '%';
-  document.getElementById('purchase-count-text').textContent =
-    (shopData.purchaseCount % 10) + ' / 10';
-
   const grid = document.getElementById('skin-grid');
   grid.innerHTML = '';
 
@@ -1326,12 +1294,10 @@ function buySkin(skinId) {
 
   shopData.coins -= skin.price;
   shopData.ownedSkins.push(skinId);
-  shopData.purchaseCount++;
   shopData.activeSkin = skinId;
   saveShop();
   coinsEl.textContent = shopData.coins;
 
-  checkFreeSkin();
   document.getElementById('shop-coins-val').textContent = shopData.coins;
   renderShop();
   showToast(`🎉 קנית את הסקין "${skin.name}"!`);
@@ -1341,25 +1307,6 @@ function equipSkin(skinId) {
   shopData.activeSkin = skinId;
   saveShop();
   renderShop();
-}
-
-function checkFreeSkin() {
-  if (shopData.purchaseCount > 0 && shopData.purchaseCount % 10 === 0) {
-    const freeSkin = SKINS.find(s =>
-      !shopData.ownedSkins.includes(s.id) &&
-      shopData.ownedSkins.length >= s.requireOwned
-    );
-    if (freeSkin) {
-      shopData.ownedSkins.push(freeSkin.id);
-      saveShop();
-      setTimeout(() => showToast(`🎁 סקין חינם! קיבלת: "${freeSkin.name}" ${freeSkin.emoji}`), 600);
-    } else {
-      shopData.coins += 30;
-      saveShop();
-      coinsEl.textContent = shopData.coins;
-      setTimeout(() => showToast('🎁 סקין חינם! קיבלת 30 מטבעות 🪙'), 600);
-    }
-  }
 }
 
 // ── Burger Shop Logic ─────────────────────────────────────────────────────────
@@ -1380,11 +1327,6 @@ function switchShopTab(tab) {
 function renderBurgerShop() {
   const owned = shopData.ownedBurgerSkins.length;
   document.getElementById('burger-owned-count').textContent = owned;
-  const pct = (shopData.burgerPurchaseCount % 5) / 5 * 100;
-  document.getElementById('burger-purchase-progress').style.width = pct + '%';
-  document.getElementById('burger-purchase-count-text').textContent =
-    (shopData.burgerPurchaseCount % 5) + ' / 5';
-
   const grid = document.getElementById('burger-skin-grid');
   grid.innerHTML = '';
 
@@ -1463,12 +1405,10 @@ function buyBurgerSkin(skinId) {
 
   shopData.coins -= skin.price;
   shopData.ownedBurgerSkins.push(skinId);
-  shopData.burgerPurchaseCount++;
   shopData.activeBurgerSkin = skinId;
   saveShop();
   coinsEl.textContent = shopData.coins;
 
-  checkFreeBurgerSkin();
   document.getElementById('shop-coins-val').textContent = shopData.coins;
   renderBurgerShop();
   showToast(`🎉 קנית את סקין ההמבורגר "${skin.name}"!`);
@@ -1478,25 +1418,6 @@ function equipBurgerSkin(skinId) {
   shopData.activeBurgerSkin = skinId;
   saveShop();
   renderBurgerShop();
-}
-
-function checkFreeBurgerSkin() {
-  if (shopData.burgerPurchaseCount > 0 && shopData.burgerPurchaseCount % 5 === 0) {
-    const freeSkin = BURGER_SKINS.find(s =>
-      !shopData.ownedBurgerSkins.includes(s.id) &&
-      shopData.ownedBurgerSkins.length >= s.requireOwned
-    );
-    if (freeSkin) {
-      shopData.ownedBurgerSkins.push(freeSkin.id);
-      saveShop();
-      setTimeout(() => showToast(`🎁 סקין המבורגר חינם! קיבלת: "${freeSkin.name}" ${freeSkin.emoji}`), 600);
-    } else {
-      shopData.coins += 20;
-      saveShop();
-      coinsEl.textContent = shopData.coins;
-      setTimeout(() => showToast('🎁 סקין חינם! קיבלת 20 מטבעות 🪙'), 600);
-    }
-  }
 }
 
 let toastTimer = null;
@@ -1512,11 +1433,6 @@ function showToast(msg) {
 function renderPizzaShop() {
   const owned = shopData.ownedPizzaSkins.length;
   document.getElementById('pizza-owned-count').textContent = owned;
-  const pct = (shopData.pizzaPurchaseCount % 5) / 5 * 100;
-  document.getElementById('pizza-purchase-progress').style.width = pct + '%';
-  document.getElementById('pizza-purchase-count-text').textContent =
-    (shopData.pizzaPurchaseCount % 5) + ' / 5';
-
   const grid = document.getElementById('pizza-skin-grid');
   grid.innerHTML = '';
 
@@ -1595,12 +1511,10 @@ function buyPizzaSkin(skinId) {
 
   shopData.coins -= skin.price;
   shopData.ownedPizzaSkins.push(skinId);
-  shopData.pizzaPurchaseCount++;
   shopData.activePizzaSkin = skinId;
   saveShop();
   coinsEl.textContent = shopData.coins;
 
-  checkFreePizzaSkin();
   document.getElementById('shop-coins-val').textContent = shopData.coins;
   renderPizzaShop();
   showToast(`🎉 קנית את סקין הפיצה "${skin.name}"!`);
@@ -1610,25 +1524,6 @@ function equipPizzaSkin(skinId) {
   shopData.activePizzaSkin = skinId;
   saveShop();
   renderPizzaShop();
-}
-
-function checkFreePizzaSkin() {
-  if (shopData.pizzaPurchaseCount > 0 && shopData.pizzaPurchaseCount % 5 === 0) {
-    const freeSkin = PIZZA_SKINS.find(s =>
-      !shopData.ownedPizzaSkins.includes(s.id) &&
-      shopData.ownedPizzaSkins.length >= s.requireOwned
-    );
-    if (freeSkin) {
-      shopData.ownedPizzaSkins.push(freeSkin.id);
-      saveShop();
-      setTimeout(() => showToast(`🎁 סקין פיצה חינם! קיבלת: "${freeSkin.name}" ${freeSkin.emoji}`), 600);
-    } else {
-      shopData.coins += 20;
-      saveShop();
-      coinsEl.textContent = shopData.coins;
-      setTimeout(() => showToast('🎁 סקין חינם! קיבלת 20 מטבעות 🪙'), 600);
-    }
-  }
 }
 
 // ── Clouds ───────────────────────────────────────────────────────────────────
