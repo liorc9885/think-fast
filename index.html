@@ -112,13 +112,13 @@
   <div id="overlay">
     <div id="message-box">
       <h2>🍔 המבורגר נופל!</h2>
-      <p>לחץ על המבורגרים כדי לתפוס אותם!<br>אל תפספס יותר מ-3 🍔</p>
+      <p>הזז את הסל כדי לתפוס המבורגרים!<br>אל תפספס יותר מ-3 🍔</p>
       <button id="start-btn" onclick="startGame()">▶ התחל משחק</button>
     </div>
   </div>
 </div>
 
-<p id="instructions">🖱️ לחץ / 👆 גע על המבורגרים כדי לתפוס אותם!</p>
+<p id="instructions">🖱️ הזז את העכבר / 👆 גרור את האצבע כדי להזיז את הסל!</p>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
@@ -137,38 +137,33 @@ let burgers = [], particles = [], clouds = [];
 let spawnTimer = 0, spawnInterval = 90;
 let frameCount = 0;
 
-// ── Catch burger at canvas coordinate ────────────────────────────────────────
-function catchBurgerAt(mx, my) {
-  for (let i = burgers.length - 1; i >= 0; i--) {
-    const b = burgers[i];
-    const dist = Math.hypot(mx - b.x, my - b.y);
-    if (dist < b.size * 0.75) {
-      score++;
-      scoreEl.textContent = score;
-      spawnParticles(b.x, b.y);
-      checkLevel();
-      burgers.splice(i, 1);
-      return;
-    }
-  }
+// ── Basket ────────────────────────────────────────────────────────────────────
+const BASKET_W = 90, BASKET_H = 44, BASKET_Y = H - 48;
+let basketX = W / 2;
+
+function clampBasket(x) {
+  return Math.max(BASKET_W / 2, Math.min(W - BASKET_W / 2, x));
 }
 
 // ── Input ────────────────────────────────────────────────────────────────────
-canvas.addEventListener('click', e => {
+canvas.addEventListener('mousemove', e => {
   if (!running) return;
   const rect = canvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (W / rect.width);
-  const my = (e.clientY - rect.top)  * (H / rect.height);
-  catchBurgerAt(mx, my);
+  basketX = clampBasket((e.clientX - rect.left) * (W / rect.width));
 });
+
+canvas.addEventListener('touchmove', e => {
+  if (!running) return;
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  basketX = clampBasket((e.touches[0].clientX - rect.left) * (W / rect.width));
+}, { passive: false });
 
 canvas.addEventListener('touchstart', e => {
   if (!running) return;
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
-  const mx = (e.touches[0].clientX - rect.left) * (W / rect.width);
-  const my = (e.touches[0].clientY - rect.top)  * (H / rect.height);
-  catchBurgerAt(mx, my);
+  basketX = clampBasket((e.touches[0].clientX - rect.left) * (W / rect.width));
 }, { passive: false });
 
 // ── Clouds ───────────────────────────────────────────────────────────────────
@@ -319,13 +314,23 @@ function update() {
     b.x += Math.sin(b.wobble) * 0.8;
     b.y += b.speed;
 
-    // missed — fell off screen
-    if (b.y - b.size > H) {
-      missCount++;
-      lives--;
-      livesEl.textContent = lives;
-      if (lives <= 0) { gameOver(); return false; }
-      return false;
+    // reached basket zone
+    if (b.y + b.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
+      if (Math.abs(b.x - basketX) < BASKET_W / 2 + b.size * 0.3) {
+        // caught by basket
+        score++;
+        scoreEl.textContent = score;
+        spawnParticles(b.x, BASKET_Y - BASKET_H / 2);
+        checkLevel();
+        return false;
+      } else if (b.y - b.size > H) {
+        // missed entirely
+        missCount++;
+        lives--;
+        livesEl.textContent = lives;
+        if (lives <= 0) { gameOver(); return false; }
+        return false;
+      }
     }
     return true;
   });
@@ -349,10 +354,55 @@ function drawBackground() {
   ctx.fillRect(0, H - 12, W, 12);
 }
 
+function drawBasket() {
+  const x = basketX, y = BASKET_Y, w = BASKET_W, h = BASKET_H;
+  ctx.save();
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + h / 2 + 4, w * 0.45, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // basket body (trapezoid)
+  ctx.fillStyle = '#c8860a';
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2,      y - h / 2);
+  ctx.lineTo(x + w / 2,      y - h / 2);
+  ctx.lineTo(x + w / 2 - 8,  y + h / 2);
+  ctx.lineTo(x - w / 2 + 8,  y + h / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // weave lines (horizontal)
+  ctx.strokeStyle = '#a06808';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 3; i++) {
+    const ly = y - h / 2 + (h / 3) * i;
+    const inset = (i / 3) * 8;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2 + inset, ly);
+    ctx.lineTo(x + w / 2 - inset, ly);
+    ctx.stroke();
+  }
+
+  // rim
+  ctx.fillStyle = '#e8a020';
+  ctx.beginPath();
+  ctx.ellipse(x, y - h / 2, w / 2, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#c8860a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, W, H);
   drawBackground();
   burgers.forEach(b => drawBurger(b.x, b.y, b.size));
+  drawBasket();
   drawParticles();
 }
 
@@ -384,6 +434,7 @@ window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
   burgers = []; particles = [];
+  basketX = W / 2;
   scoreEl.textContent = 0;
   livesEl.textContent = 3;
   levelEl.textContent = 1;
