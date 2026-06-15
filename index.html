@@ -333,6 +333,50 @@
       text-align: center;
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Shop tabs ──────────────────────────────────────────────────────────── */
+    #shop-tabs {
+      display: flex;
+      padding: 12px 20px 0;
+      gap: 8px;
+    }
+
+    .shop-tab {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.6);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .shop-tab.active {
+      background: rgba(255,215,0,0.15);
+      border-color: rgba(255,215,0,0.5);
+      color: #ffd700;
+    }
+    .shop-tab:hover:not(.active) {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85);
+    }
+
+    #burger-purchase-progress-wrap {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    #burger-purchase-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #e67e22, #ffd700);
+      border-radius: 10px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px rgba(255,165,0,0.5);
+    }
   </style>
 </head>
 <body>
@@ -367,24 +411,45 @@
 <div id="shop-overlay" style="display:none;" onclick="handleShopOverlayClick(event)">
   <div id="shop-panel">
     <div id="shop-header">
-      <h2>🛍️ חנות סקינים</h2>
+      <h2>🛍️ חנות</h2>
       <div id="shop-coins-info">🪙 <b id="shop-coins-val">0</b></div>
       <button id="shop-close-btn" onclick="closeShop()">✕</button>
     </div>
 
-    <div id="free-skin-bar">
-      <div id="free-skin-label">
-        <span>🎁 כל 10 רכישות = סקין חינם!</span>
-        <span id="purchase-count-text">0 / 10</span>
-      </div>
-      <div id="purchase-progress-wrap">
-        <div id="purchase-progress" style="width:0%"></div>
-      </div>
+    <div id="shop-tabs">
+      <button class="shop-tab active" id="tab-basket" onclick="switchShopTab('basket')">🧺 סל</button>
+      <button class="shop-tab" id="tab-burger" onclick="switchShopTab('burger')">🍔 המבורגר</button>
     </div>
 
-    <div id="owned-info">סקינים בבעלותך: <b id="owned-count">1</b></div>
+    <!-- Basket skins panel -->
+    <div id="panel-basket">
+      <div id="free-skin-bar">
+        <div id="free-skin-label">
+          <span>🎁 כל 10 רכישות = סקין חינם!</span>
+          <span id="purchase-count-text">0 / 10</span>
+        </div>
+        <div id="purchase-progress-wrap">
+          <div id="purchase-progress" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="owned-info">סקינים בבעלותך: <b id="owned-count">1</b></div>
+      <div id="skin-grid"></div>
+    </div>
 
-    <div id="skin-grid"></div>
+    <!-- Burger skins panel -->
+    <div id="panel-burger" style="display:none">
+      <div id="free-skin-bar" style="margin:14px 20px 0;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);border-radius:14px;padding:10px 14px;">
+        <div id="burger-free-skin-label" style="font-size:0.85rem;color:#ffd700;margin-bottom:7px;display:flex;justify-content:space-between;">
+          <span>🎁 כל 5 רכישות = סקין חינם!</span>
+          <span id="burger-purchase-count-text">0 / 5</span>
+        </div>
+        <div id="burger-purchase-progress-wrap">
+          <div id="burger-purchase-progress" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="burger-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני המבורגר שלך: <b id="burger-owned-count">1</b></div>
+      <div id="burger-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
+    </div>
   </div>
 </div>
 
@@ -458,12 +523,31 @@ const TIER_LABELS  = ['בסיסי', 'טוב', 'מגניב', 'אפי', 'אגדי'
 const TIER_COLORS  = ['#888888', '#27ae60', '#2980b9', '#9b59b6', '#e67e22'];
 const TIER_STARS   = ['', '★', '★★', '★★★', '★★★★'];
 
+const BURGER_SKINS = [
+  { id: 'classic',    name: 'קלאסי',    price: 0,   tier: 0, requireOwned: 0, emoji: '🍔' },
+  { id: 'spicy',      name: 'חריף',     price: 10,  tier: 1, requireOwned: 0, emoji: '🌶️' },
+  { id: 'veggie',     name: 'טבעוני',   price: 15,  tier: 1, requireOwned: 0, emoji: '🥗' },
+  { id: 'gold',       name: 'זהב',      price: 35,  tier: 2, requireOwned: 2, emoji: '👑' },
+  { id: 'ocean',      name: 'ים',       price: 45,  tier: 2, requireOwned: 2, emoji: '🐟' },
+  { id: 'galaxy',     name: 'גלקסיה',  price: 60,  tier: 3, requireOwned: 4, emoji: '🌌' },
+  { id: 'neon',       name: 'ניאון',    price: 80,  tier: 3, requireOwned: 5, emoji: '✨' },
+  { id: 'legendary',  name: 'אגדי',     price: 120, tier: 4, requireOwned: 7, emoji: '🏆' },
+];
+
 let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   coins: 0,
   ownedSkins: ['classic'],
   activeSkin: 'classic',
   purchaseCount: 0,
+  ownedBurgerSkins: ['classic'],
+  activeBurgerSkin: 'classic',
+  burgerPurchaseCount: 0,
 };
+
+// Migrate old saves that lack burger skin fields
+if (!shopData.ownedBurgerSkins) shopData.ownedBurgerSkins = ['classic'];
+if (!shopData.activeBurgerSkin) shopData.activeBurgerSkin = 'classic';
+if (!shopData.burgerPurchaseCount) shopData.burgerPurchaseCount = 0;
 
 function saveShop() {
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
@@ -736,6 +820,11 @@ function openShop() {
     togglePause();
     shopPausedGame = true;
   }
+  activeShopTab = 'basket';
+  document.getElementById('panel-basket').style.display = '';
+  document.getElementById('panel-burger').style.display = 'none';
+  document.getElementById('tab-basket').className = 'shop-tab active';
+  document.getElementById('tab-burger').className  = 'shop-tab';
   renderShop();
   document.getElementById('shop-overlay').style.display = 'flex';
 }
@@ -860,6 +949,7 @@ function buySkin(skinId) {
   coinsEl.textContent = shopData.coins;
 
   checkFreeSkin();
+  document.getElementById('shop-coins-val').textContent = shopData.coins;
   renderShop();
   showToast(`🎉 קנית את הסקין "${skin.name}"!`);
 }
@@ -885,6 +975,140 @@ function checkFreeSkin() {
       saveShop();
       coinsEl.textContent = shopData.coins;
       setTimeout(() => showToast('🎁 סקין חינם! קיבלת 30 מטבעות 🪙'), 600);
+    }
+  }
+}
+
+// ── Burger Shop Logic ─────────────────────────────────────────────────────────
+let activeShopTab = 'basket';
+
+function switchShopTab(tab) {
+  activeShopTab = tab;
+  document.getElementById('panel-basket').style.display = tab === 'basket' ? '' : 'none';
+  document.getElementById('panel-burger').style.display = tab === 'burger'  ? '' : 'none';
+  document.getElementById('tab-basket').className = 'shop-tab' + (tab === 'basket' ? ' active' : '');
+  document.getElementById('tab-burger').className  = 'shop-tab' + (tab === 'burger'  ? ' active' : '');
+  if (tab === 'burger') renderBurgerShop();
+}
+
+function renderBurgerShop() {
+  const owned = shopData.ownedBurgerSkins.length;
+  document.getElementById('burger-owned-count').textContent = owned;
+  const pct = (shopData.burgerPurchaseCount % 5) / 5 * 100;
+  document.getElementById('burger-purchase-progress').style.width = pct + '%';
+  document.getElementById('burger-purchase-count-text').textContent =
+    (shopData.burgerPurchaseCount % 5) + ' / 5';
+
+  const grid = document.getElementById('burger-skin-grid');
+  grid.innerHTML = '';
+
+  BURGER_SKINS.forEach(skin => {
+    const isOwned  = shopData.ownedBurgerSkins.includes(skin.id);
+    const isActive = shopData.activeBurgerSkin === skin.id;
+    const isLocked = owned < skin.requireOwned;
+    const canAfford = shopData.coins >= skin.price;
+
+    let cardClass = 'skin-card';
+    if (isActive) cardClass += ' active';
+    else if (isOwned) cardClass += ' owned';
+    else if (isLocked) cardClass += ' locked';
+
+    const tierColor = TIER_COLORS[skin.tier];
+    const tierLabel = TIER_STARS[skin.tier] ? TIER_STARS[skin.tier] + ' ' : '';
+
+    let btnHtml;
+    if (isActive) {
+      btnHtml = `<button class="skin-btn btn-active" disabled>✓ פעיל</button>`;
+    } else if (isOwned) {
+      btnHtml = `<button class="skin-btn btn-equip" onclick="equipBurgerSkin('${skin.id}')">לבש</button>`;
+    } else if (isLocked) {
+      btnHtml = `<button class="skin-btn btn-locked" disabled>🔒 צריך ${skin.requireOwned}</button>`;
+    } else {
+      btnHtml = `<button class="skin-btn btn-buy" onclick="buyBurgerSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
+    }
+
+    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
+
+    grid.innerHTML += `
+      <div class="${cardClass}">
+        <canvas class="skin-preview" id="bpreview-${skin.id}" width="88" height="52"></canvas>
+        <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
+        <div class="skin-name">${skin.emoji} ${skin.name}</div>
+        ${priceInfo}
+        ${btnHtml}
+      </div>`;
+  });
+
+  requestAnimationFrame(drawBurgerSkinPreviews);
+}
+
+function drawBurgerSkinPreviews() {
+  BURGER_SKINS.forEach(skin => {
+    const pc = document.getElementById(`bpreview-${skin.id}`);
+    if (!pc) return;
+    const pctx = pc.getContext('2d');
+    const pw = pc.width, ph = pc.height;
+    pctx.clearRect(0, 0, pw, ph);
+
+    const isLocked = shopData.ownedBurgerSkins.length < skin.requireOwned;
+    const bg = pctx.createLinearGradient(0, 0, 0, ph);
+    bg.addColorStop(0, isLocked ? '#1a1a2e' : '#d4ecf7');
+    bg.addColorStop(1, isLocked ? '#0d0a2e' : '#c1dff0');
+    pctx.fillStyle = bg;
+    if (pctx.roundRect) { pctx.roundRect(0, 0, pw, ph, 6); pctx.fill(); }
+    else { pctx.fillRect(0, 0, pw, ph); }
+
+    if (isLocked) {
+      pctx.fillStyle = 'rgba(255,255,255,0.3)';
+      pctx.font = 'bold 18px Arial';
+      pctx.textAlign = 'center';
+      pctx.fillText('🔒', pw / 2, ph / 2 + 7);
+    } else {
+      drawBurger(pctx, pw / 2, ph * 0.55, 28, false, skin.id);
+    }
+  });
+}
+
+function buyBurgerSkin(skinId) {
+  const skin = BURGER_SKINS.find(s => s.id === skinId);
+  if (!skin || shopData.ownedBurgerSkins.includes(skinId)) return;
+  if (shopData.coins < skin.price) return;
+  if (shopData.ownedBurgerSkins.length < skin.requireOwned) return;
+
+  shopData.coins -= skin.price;
+  shopData.ownedBurgerSkins.push(skinId);
+  shopData.burgerPurchaseCount++;
+  shopData.activeBurgerSkin = skinId;
+  saveShop();
+  coinsEl.textContent = shopData.coins;
+
+  checkFreeBurgerSkin();
+  document.getElementById('shop-coins-val').textContent = shopData.coins;
+  renderBurgerShop();
+  showToast(`🎉 קנית את סקין ההמבורגר "${skin.name}"!`);
+}
+
+function equipBurgerSkin(skinId) {
+  shopData.activeBurgerSkin = skinId;
+  saveShop();
+  renderBurgerShop();
+}
+
+function checkFreeBurgerSkin() {
+  if (shopData.burgerPurchaseCount > 0 && shopData.burgerPurchaseCount % 5 === 0) {
+    const freeSkin = BURGER_SKINS.find(s =>
+      !shopData.ownedBurgerSkins.includes(s.id) &&
+      shopData.ownedBurgerSkins.length >= s.requireOwned
+    );
+    if (freeSkin) {
+      shopData.ownedBurgerSkins.push(freeSkin.id);
+      saveShop();
+      setTimeout(() => showToast(`🎁 סקין המבורגר חינם! קיבלת: "${freeSkin.name}" ${freeSkin.emoji}`), 600);
+    } else {
+      shopData.coins += 20;
+      saveShop();
+      coinsEl.textContent = shopData.coins;
+      setTimeout(() => showToast('🎁 סקין חינם! קיבלת 20 מטבעות 🪙'), 600);
     }
   }
 }
@@ -923,44 +1147,237 @@ function drawCloud(c) {
 }
 
 // ── Burger drawing ────────────────────────────────────────────────────────────
-function drawBurger(x, y, size, highlight) {
+function drawBurger(c, x, y, size, highlight, skinId) {
   const s = size / 40;
-  ctx.save();
-  ctx.translate(x, y);
+  c.save();
+  c.translate(x, y);
 
-  if (highlight) { ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 18; }
+  switch (skinId) {
 
-  ctx.fillStyle = '#e8a020';
-  ctx.beginPath();
-  ctx.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0);
-  ctx.fill();
+    case 'spicy': {
+      if (highlight) { c.shadowColor = '#ff3300'; c.shadowBlur = 22; }
+      // top bun – dark red
+      c.fillStyle = '#b52200';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // seeds – orange
+      c.fillStyle = '#ff8800';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // hot pepper "lettuce"
+      c.fillStyle = '#cc1100';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // dark charred patty
+      c.fillStyle = '#3a1500';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // orange pepper cheese
+      c.fillStyle = '#ff6600';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.shadowColor = '#ff4400'; c.shadowBlur = 10;
+      c.fillStyle = '#b52200';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
 
-  ctx.fillStyle = '#fff3c0';
-  [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
-    ctx.beginPath(); ctx.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); ctx.fill();
-  });
+    case 'veggie': {
+      if (highlight) { c.shadowColor = '#00ff88'; c.shadowBlur = 18; }
+      // top bun – light green
+      c.fillStyle = '#7cb518';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // white seeds
+      c.fillStyle = '#ffffff';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // thick dark lettuce
+      c.fillStyle = '#2e7d32';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 7*s, 0, 0, Math.PI*2); c.fill();
+      // portobello patty
+      c.fillStyle = '#5d4037';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // avocado "cheese"
+      c.fillStyle = '#aed661';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#7cb518';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
 
-  ctx.fillStyle = '#3cb043';
-  ctx.beginPath();
-  ctx.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2);
-  ctx.fill();
+    case 'gold': {
+      c.shadowColor = '#ffd700'; c.shadowBlur = 20;
+      if (highlight) c.shadowBlur = 30;
+      // top bun – gold
+      c.fillStyle = '#ffd700';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // pearl seeds
+      c.fillStyle = '#fffde7';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // gold "lettuce"
+      c.fillStyle = '#f9a825';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // gold patty
+      c.fillStyle = '#e65100';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // light gold cheese
+      c.fillStyle = '#fff176';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#ffd700';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
 
-  ctx.fillStyle = '#7b3f00';
-  ctx.beginPath();
-  ctx.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2);
-  ctx.fill();
+    case 'ocean': {
+      if (highlight) { c.shadowColor = '#00bcd4'; c.shadowBlur = 18; }
+      // top bun – ocean blue
+      c.fillStyle = '#0288d1';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // foam seeds
+      c.fillStyle = '#e0f7fa';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // seaweed
+      c.fillStyle = '#00897b';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // fish fillet
+      c.fillStyle = '#01579b';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // cyan cheese
+      c.fillStyle = '#80deea';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#0288d1';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
 
-  ctx.fillStyle = '#f5c518';
-  ctx.beginPath();
-  ctx.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2);
-  ctx.fill();
+    case 'galaxy': {
+      c.shadowColor = '#a855f7'; c.shadowBlur = 16;
+      if (highlight) c.shadowBlur = 26;
+      // top bun – deep purple
+      c.fillStyle = '#4a148c';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // star seeds
+      c.fillStyle = '#ffffff';
+      c.shadowColor = '#fff'; c.shadowBlur = 6;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#a855f7'; c.shadowBlur = 16;
+      // nebula layer
+      c.fillStyle = '#7b1fa2';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // dark space patty
+      c.fillStyle = '#1a237e';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // stardust cheese
+      c.fillStyle = '#ce93d8';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#4a148c';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
 
-  ctx.fillStyle = '#e8a020';
-  ctx.beginPath();
-  ctx.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2);
-  ctx.fill();
+    case 'neon': {
+      if (highlight) { c.shadowColor = '#ff00ff'; c.shadowBlur = 28; }
+      else { c.shadowColor = '#ff00ff'; c.shadowBlur = 12; }
+      // top bun – near black
+      c.fillStyle = '#0a0a14';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      c.strokeStyle = '#ff00ff'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.stroke();
+      // neon seeds
+      c.fillStyle = '#00ffff'; c.shadowColor = '#00ffff'; c.shadowBlur = 8;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#ff00ff'; c.shadowBlur = 12;
+      // neon green lettuce
+      c.fillStyle = '#00ff41';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // dark patty
+      c.fillStyle = '#0a0a14';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.strokeStyle = '#00ffff'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.stroke();
+      // magenta cheese
+      c.fillStyle = '#ff00ff';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#0a0a14';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.strokeStyle = '#ff00ff'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.stroke();
+      c.shadowBlur = 0;
+      break;
+    }
 
-  ctx.restore();
+    case 'legendary': {
+      c.shadowColor = '#ffd700'; c.shadowBlur = 28;
+      if (highlight) c.shadowBlur = 38;
+      // top bun – rich gold gradient via solid fill
+      c.fillStyle = '#ff8c00';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // star seeds
+      const starPts = [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]];
+      c.fillStyle = '#ffffff'; c.shadowColor = '#fff'; c.shadowBlur = 8;
+      starPts.forEach(([sx,sy]) => {
+        c.save(); c.translate(sx, sy);
+        c.beginPath();
+        for (let p = 0; p < 8; p++) {
+          const a = (p/8)*Math.PI*2 - Math.PI/2;
+          const r = p%2===0 ? 2.5*s : 1.2*s;
+          p===0 ? c.moveTo(Math.cos(a)*r, Math.sin(a)*r) : c.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+        }
+        c.closePath(); c.fill(); c.restore();
+      });
+      c.shadowColor = '#ffd700'; c.shadowBlur = 28;
+      // rainbow lettuce
+      const rg = c.createLinearGradient(-22*s, 0, 22*s, 0);
+      rg.addColorStop(0,'#ff0000'); rg.addColorStop(0.33,'#00ff00'); rg.addColorStop(0.66,'#0088ff'); rg.addColorStop(1,'#ff00ff');
+      c.fillStyle = rg;
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // legendary patty
+      c.fillStyle = '#b8860b';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // shimmering cheese
+      c.fillStyle = '#ffe87c';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#ff8c00';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
+
+    default: { // classic
+      if (highlight) { c.shadowColor = '#ffe066'; c.shadowBlur = 18; }
+      c.fillStyle = '#e8a020';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#fff3c0';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      c.fillStyle = '#3cb043';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#7b3f00';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#f5c518';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      c.fillStyle = '#e8a020';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+    }
+  }
+
+  c.restore();
 }
 
 // ── Particle system ───────────────────────────────────────────────────────────
@@ -1112,7 +1529,7 @@ function drawBasket() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
   drawBackground();
-  burgers.forEach(b => drawBurger(b.x, b.y, b.size));
+  burgers.forEach(b => drawBurger(ctx, b.x, b.y, b.size, false, shopData.activeBurgerSkin));
   drawBasket();
   drawParticles();
   drawFloatingTexts();
