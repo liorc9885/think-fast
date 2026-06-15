@@ -763,6 +763,11 @@ const BURGER_SKINS = [
   { id: 'ice',        name: 'קרח',      price: 72,  tier: 3, requireOwned: 5, emoji: '🧊' },
   { id: 'toxic',      name: 'רעיל',     price: 60,  tier: 3, requireOwned: 5, emoji: '☢️' },
   { id: 'titan',      name: 'טיטאן',    price: 160, tier: 4, requireOwned: 9, emoji: '🛡️' },
+  { id: 'lemon',      name: 'לימון',    price: 13,  tier: 1, requireOwned: 0, emoji: '🍋' },
+  { id: 'caramel',    name: 'קרמל',     price: 16,  tier: 1, requireOwned: 0, emoji: '🍮' },
+  { id: 'cosmic',     name: 'קוסמי',    price: 38,  tier: 2, requireOwned: 2, emoji: '🪐' },
+  { id: 'aurora',     name: 'אורורה',   price: 75,  tier: 3, requireOwned: 5, emoji: '🌠' },
+  { id: 'magma',      name: 'מגמה',     price: 68,  tier: 3, requireOwned: 5, emoji: '🔥' },
 ];
 
 const PIZZA_SKINS = [
@@ -790,6 +795,11 @@ const PIZZA_SKINS = [
   { id: 'ice',       name: 'קרח',      price: 77,  tier: 3, requireOwned: 5, emoji: '🧊' },
   { id: 'toxic',     name: 'רעיל',     price: 65,  tier: 3, requireOwned: 5, emoji: '☢️' },
   { id: 'titan',     name: 'טיטאן',    price: 160, tier: 4, requireOwned: 8, emoji: '🛡️' },
+  { id: 'veggie',    name: 'ירקות',    price: 11,  tier: 1, requireOwned: 0, emoji: '🥦' },
+  { id: 'gold',      name: 'זהב',      price: 40,  tier: 2, requireOwned: 2, emoji: '👑' },
+  { id: 'lava',      name: 'לבה',      price: 35,  tier: 2, requireOwned: 2, emoji: '🌋' },
+  { id: 'aurora',    name: 'אורורה',   price: 72,  tier: 3, requireOwned: 5, emoji: '🌠' },
+  { id: 'dragon',    name: 'דרקון',    price: 150, tier: 4, requireOwned: 8, emoji: '🐉' },
 ];
 
 let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
@@ -2478,6 +2488,153 @@ function drawBurger(c, x, y, size, highlight, skinId) {
       break;
     }
 
+    case 'lemon': {
+      if (highlight) { c.shadowColor = '#ffff44'; c.shadowBlur = 18; }
+      // top bun – bright lemon yellow
+      c.fillStyle = '#e8d800';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // zest seeds
+      c.fillStyle = '#ffffff';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // lettuce – lime green
+      c.fillStyle = '#aadd00';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // patty – pale yellow
+      c.fillStyle = '#c8a800';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // cheese – vivid lemon
+      c.fillStyle = '#ffee00';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#e8d800';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
+
+    case 'caramel': {
+      if (highlight) { c.shadowColor = '#cc8800'; c.shadowBlur = 18; }
+      // top bun – warm caramel
+      c.fillStyle = '#c86a00';
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // drizzle seeds
+      c.fillStyle = '#ffcc88';
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
+      });
+      // toffee "lettuce"
+      c.fillStyle = '#a85500';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // dark caramel patty
+      c.fillStyle = '#5a2800';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // honey cheese
+      c.fillStyle = '#ffaa22';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#c86a00';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      break;
+    }
+
+    case 'cosmic': {
+      c.shadowColor = '#bb44ff'; c.shadowBlur = 20;
+      if (highlight) c.shadowBlur = 30;
+      // top bun – deep purple gradient
+      const cg = c.createLinearGradient(-20*s, -30*s, 20*s, -6*s);
+      cg.addColorStop(0, '#1a0044'); cg.addColorStop(1, '#550088');
+      c.fillStyle = cg;
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // star seeds
+      c.fillStyle = '#ffffff'; c.shadowColor = '#ffffff'; c.shadowBlur = 6;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      // nebula lettuce
+      c.shadowColor = '#bb44ff'; c.shadowBlur = 14;
+      c.fillStyle = '#220066';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // cosmic patty
+      c.fillStyle = '#110033';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // pink cheese
+      c.fillStyle = '#cc44bb';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#1a0044';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'aurora': {
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 22;
+      if (highlight) c.shadowBlur = 32;
+      // top bun – aurora gradient
+      const ag = c.createLinearGradient(-20*s, -30*s, 20*s, -6*s);
+      ag.addColorStop(0, '#003322'); ag.addColorStop(0.5, '#006655'); ag.addColorStop(1, '#004488');
+      c.fillStyle = ag;
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // glowing seeds
+      c.fillStyle = '#00ffcc'; c.shadowColor = '#00ffcc'; c.shadowBlur = 10;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 22;
+      // aurora lettuce – green
+      c.fillStyle = '#004433';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      // dark patty
+      c.fillStyle = '#001a11';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // teal cheese
+      c.fillStyle = '#00cc99';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#002233';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      // outline glow
+      c.strokeStyle = '#00ffcc'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.stroke();
+      c.shadowBlur = 0;
+      break;
+    }
+
+    case 'magma': {
+      c.shadowColor = '#ff6600'; c.shadowBlur = 24;
+      if (highlight) c.shadowBlur = 34;
+      // top bun – dark charred rock
+      const mg = c.createLinearGradient(-20*s, -30*s, 20*s, -6*s);
+      mg.addColorStop(0, '#1a0800'); mg.addColorStop(1, '#330e00');
+      c.fillStyle = mg;
+      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
+      // ember seeds
+      c.fillStyle = '#ff6600'; c.shadowColor = '#ff6600'; c.shadowBlur = 10;
+      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
+        c.beginPath(); c.arc(sx, sy, 1.8*s, 0, Math.PI*2); c.fill();
+      });
+      c.shadowColor = '#ff4400'; c.shadowBlur = 24;
+      // magma "lettuce" – glowing orange crack
+      c.fillStyle = '#220800';
+      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
+      c.strokeStyle = '#ff4400'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.moveTo(-10*s, -8*s); c.bezierCurveTo(-3*s, -6*s, 3*s, -10*s, 10*s, -8*s); c.stroke();
+      // dark patty
+      c.fillStyle = '#0d0400';
+      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
+      // molten cheese
+      c.fillStyle = '#ff5500';
+      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
+      // bottom bun
+      c.fillStyle = '#1a0800';
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      c.strokeStyle = '#ff6600'; c.lineWidth = 1.5*s;
+      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.stroke();
+      c.shadowBlur = 0;
+      break;
+    }
+
     default: { // classic
       if (highlight) { c.shadowColor = '#ffe066'; c.shadowBlur = 18; }
       c.fillStyle = '#e8a020';
@@ -2980,6 +3137,121 @@ function drawPizza(c, x, y, size, skinId) {
       c.fillStyle = '#88ff44';
       [[-5*s, -1*s], [5*s, 1*s], [0*s, 6*s]].forEach(([px, py]) => {
         c.beginPath(); c.arc(px, py, 2*s, 0, Math.PI*2); c.fill();
+      });
+      break;
+    }
+
+    case 'veggie': {
+      c.fillStyle = '#5da832';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#3a8000');
+      drawCheese(c, '#aaee55');
+      // broccoli-style toppings
+      c.fillStyle = '#2e6600';
+      [[-6*s, 0*s], [5*s, -2*s], [0*s, 6*s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py - 2*s, 3*s, Math.PI, 0); c.fill();
+        c.fillRect(px - 1.2*s, py - 2*s, 2.4*s, 4*s);
+      });
+      break;
+    }
+
+    case 'gold': {
+      c.shadowColor = '#ffd700'; c.shadowBlur = 18;
+      const pizzaGoldG = c.createLinearGradient(-21*s, -14*s, 21*s, 22*s);
+      pizzaGoldG.addColorStop(0, '#ffd700'); pizzaGoldG.addColorStop(1, '#a07800');
+      c.fillStyle = pizzaGoldG;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#c89000');
+      drawCheese(c, '#fff176');
+      // crown-dot toppings
+      c.fillStyle = '#ffeedd';
+      [[-5*s, -1*s], [5*s, 1*s], [0*s, 6*s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 2.5*s, 0, Math.PI*2); c.fill();
+      });
+      break;
+    }
+
+    case 'lava': {
+      c.shadowColor = '#ff4400'; c.shadowBlur = 18;
+      const lavaG = c.createLinearGradient(-21*s, -14*s, 21*s, 22*s);
+      lavaG.addColorStop(0, '#cc2200'); lavaG.addColorStop(1, '#550800');
+      c.fillStyle = lavaG;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#991100');
+      drawCheese(c, '#ff5500');
+      // glowing cracks
+      c.shadowColor = '#ff6600'; c.shadowBlur = 10;
+      c.strokeStyle = '#ffaa00'; c.lineWidth = 1.2*s;
+      c.beginPath(); c.moveTo(-8*s, 0*s); c.bezierCurveTo(-2*s, 2*s, 2*s, -2*s, 8*s, 0*s); c.stroke();
+      c.shadowBlur = 0;
+      c.fillStyle = '#ff8800';
+      [[-5*s, -1*s], [5*s, 1*s], [0*s, 6*s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 2*s, 0, Math.PI*2); c.fill();
+      });
+      break;
+    }
+
+    case 'aurora': {
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 16;
+      const auroraG = c.createLinearGradient(-21*s, -14*s, 21*s, 22*s);
+      auroraG.addColorStop(0, '#003322'); auroraG.addColorStop(0.5, '#004466'); auroraG.addColorStop(1, '#001a33');
+      c.fillStyle = auroraG;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#002233');
+      drawCheese(c, '#00aa88');
+      // glowing outline
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 12;
+      c.strokeStyle = '#00ffcc'; c.lineWidth = 1.5*s;
+      sliceShape(c); c.stroke();
+      c.shadowBlur = 0;
+      // star dots
+      c.fillStyle = 'rgba(200,255,240,0.9)';
+      [[-6*s, 0*s], [5*s, -3*s], [0*s, 7*s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 1.5*s, 0, Math.PI*2); c.fill();
+      });
+      break;
+    }
+
+    case 'dragon': {
+      c.shadowColor = '#ff3300'; c.shadowBlur = 20;
+      const dragonG = c.createLinearGradient(-21*s, -14*s, 21*s, 22*s);
+      dragonG.addColorStop(0, '#220000'); dragonG.addColorStop(0.5, '#550800'); dragonG.addColorStop(1, '#1a0000');
+      c.fillStyle = dragonG;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#330000');
+      drawCheese(c, '#880000');
+      // scale pattern
+      c.save(); sliceShape(c); c.clip();
+      c.strokeStyle = 'rgba(255,80,0,0.35)'; c.lineWidth = 0.8*s;
+      for (let row = 0; row < 4; row++) {
+        for (let col = -2; col <= 2; col++) {
+          const ox = col * 7*s + (row % 2 === 0 ? 0 : 3.5*s);
+          const oy = row * 5*s - 8*s;
+          c.beginPath(); c.arc(ox, oy, 3.5*s, 0, Math.PI); c.stroke();
+        }
+      }
+      c.restore();
+      // fire outline glow
+      c.shadowColor = '#ff3300'; c.shadowBlur = 16;
+      c.strokeStyle = '#ff4400'; c.lineWidth = 1.8*s;
+      sliceShape(c); c.stroke();
+      c.shadowBlur = 0;
+      // ember gems
+      c.fillStyle = '#ffaa00';
+      [[-5*s, -1*s], [5*s, 1*s], [0*s, 6*s]].forEach(([px, py]) => {
+        c.save(); c.translate(px, py);
+        c.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (i * 4 * Math.PI / 5) - Math.PI / 2;
+          const r = i % 2 === 0 ? 3*s : 1.5*s;
+          i === 0 ? c.moveTo(Math.cos(a)*r, Math.sin(a)*r) : c.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+        }
+        c.closePath(); c.fill();
+        c.restore();
       });
       break;
     }
