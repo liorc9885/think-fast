@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.liorc9885.thinkfast",
+    "sha256_cert_fingerprints": [
+      "CA:67:FE:02:46:55:40:88:E0:DB:8F:0E:DA:88:5A:B5:1B:EE:4A:22:E6:7C:DA:2B:C3:68:E0:2A:66:92:12:5C"
+    ]
+  }
+}]
