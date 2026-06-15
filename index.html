@@ -94,6 +94,24 @@
       border-radius: 10px;
       padding: 6px 16px;
     }
+
+    #pause-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.92);
+      border: 2px solid #c0392b;
+      color: #c0392b;
+      border-radius: 20px;
+      padding: 7px 18px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.1s, background 0.1s, color 0.1s;
+      display: none;
+    }
+    #pause-btn:hover { background: #c0392b; color: #fff; transform: scale(1.07); }
   </style>
 </head>
 <body>
@@ -108,6 +126,8 @@
 
 <div style="position:relative;">
   <canvas id="gameCanvas" width="480" height="560"></canvas>
+
+  <button id="pause-btn" onclick="togglePause()">⏸ השהה</button>
 
   <div id="overlay">
     <div id="message-box">
@@ -132,7 +152,7 @@ const overlay = document.getElementById('overlay');
 
 // ── State ────────────────────────────────────────────────────────────────────
 let score = 0, lives = 3, level = 1, missCount = 0;
-let running = false, animId = null;
+let running = false, paused = false, animId = null;
 let burgers = [], particles = [], clouds = [], floatingTexts = [];
 let spawnTimer = 0, spawnInterval = 90;
 let frameCount = 0;
@@ -439,6 +459,36 @@ function loop() {
   animId = requestAnimationFrame(loop);
 }
 
+// ── Pause ─────────────────────────────────────────────────────────────────────
+const pauseBtn = document.getElementById('pause-btn');
+
+function drawPauseOverlay() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 38px "Segoe UI", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⏸ המשחק מושהה', W / 2, H / 2 - 10);
+  ctx.font = '20px "Segoe UI", Arial, sans-serif';
+  ctx.fillStyle = '#ffe066';
+  ctx.fillText('לחץ "המשך" כדי לחזור למשחק', W / 2, H / 2 + 34);
+  ctx.restore();
+}
+
+window.togglePause = function() {
+  if (!running) return;
+  paused = !paused;
+  if (paused) {
+    cancelAnimationFrame(animId);
+    pauseBtn.textContent = '▶ המשך';
+    drawPauseOverlay();
+  } else {
+    pauseBtn.textContent = '⏸ השהה';
+    loop();
+  }
+};
+
 // ── Game control ──────────────────────────────────────────────────────────────
 function showOverlay(html) {
   overlay.innerHTML = html;
@@ -447,7 +497,10 @@ function showOverlay(html) {
 
 function gameOver() {
   running = false;
+  paused = false;
   cancelAnimationFrame(animId);
+  pauseBtn.style.display = 'none';
+  pauseBtn.textContent = '⏸ השהה';
   showOverlay(`
     <div id="message-box">
       <h2>💀 המשחק נגמר!</h2>
@@ -460,8 +513,11 @@ function gameOver() {
 window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
+  paused = false;
   burgers = []; particles = []; floatingTexts = [];
   basketX = W / 2;
+  pauseBtn.textContent = '⏸ השהה';
+  pauseBtn.style.display = 'block';
   scoreEl.textContent = 0;
   livesEl.textContent = 3;
   levelEl.textContent = 1;
