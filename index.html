@@ -419,6 +419,7 @@
     <div id="shop-tabs">
       <button class="shop-tab active" id="tab-basket" onclick="switchShopTab('basket')">🧺 סל</button>
       <button class="shop-tab" id="tab-burger" onclick="switchShopTab('burger')">🍔 המבורגר</button>
+      <button class="shop-tab" id="tab-pizza" onclick="switchShopTab('pizza')">🍕 פיצה</button>
     </div>
 
     <!-- Basket skins panel -->
@@ -450,6 +451,21 @@
       <div id="burger-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני המבורגר שלך: <b id="burger-owned-count">1</b></div>
       <div id="burger-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
     </div>
+
+    <!-- Pizza skins panel -->
+    <div id="panel-pizza" style="display:none">
+      <div id="free-skin-bar" style="margin:14px 20px 0;background:rgba(220,80,0,0.08);border:1px solid rgba(220,80,0,0.2);border-radius:14px;padding:10px 14px;">
+        <div id="pizza-free-skin-label" style="font-size:0.85rem;color:#ff8c42;margin-bottom:7px;display:flex;justify-content:space-between;">
+          <span>🎁 כל 5 רכישות = סקין חינם!</span>
+          <span id="pizza-purchase-count-text">0 / 5</span>
+        </div>
+        <div id="pizza-purchase-progress-wrap">
+          <div id="pizza-purchase-progress" style="width:0%;height:8px;background:linear-gradient(90deg,#ff6b35,#ff8c42);border-radius:4px;transition:width 0.4s"></div>
+        </div>
+      </div>
+      <div id="pizza-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני הפיצה שלך: <b id="pizza-owned-count">1</b></div>
+      <div id="pizza-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
+    </div>
   </div>
 </div>
 
@@ -470,8 +486,9 @@ const overlay = document.getElementById('overlay');
 // ── State ────────────────────────────────────────────────────────────────────
 let score = 0, lives = 3, level = 1, missCount = 0;
 let running = false, paused = false, animId = null;
-let burgers = [], particles = [], clouds = [], floatingTexts = [];
+let burgers = [], pizzas = [], particles = [], clouds = [], floatingTexts = [];
 let spawnTimer = 0, spawnInterval = 90;
+let pizzaSpawnTimer = 0, pizzaSpawnInterval = 210;
 let frameCount = 0;
 
 // ── Basket ────────────────────────────────────────────────────────────────────
@@ -544,6 +561,18 @@ const BURGER_SKINS = [
   { id: 'legendary',  name: 'אגדי',     price: 120, tier: 4, requireOwned: 7, emoji: '🏆' },
 ];
 
+const PIZZA_SKINS = [
+  { id: 'classic',   name: 'קלאסי',    price: 0,   tier: 0, requireOwned: 0, emoji: '🍕' },
+  { id: 'cheese',    name: 'גבינה',    price: 10,  tier: 1, requireOwned: 0, emoji: '🧀' },
+  { id: 'hawaii',    name: 'הוואי',    price: 14,  tier: 1, requireOwned: 0, emoji: '🍍' },
+  { id: 'spicy',     name: 'חריף',     price: 12,  tier: 1, requireOwned: 0, emoji: '🌶️' },
+  { id: 'bbq',       name: 'בי-בי-קיו', price: 32, tier: 2, requireOwned: 2, emoji: '🍖' },
+  { id: 'mushroom',  name: 'פטריות',   price: 38,  tier: 2, requireOwned: 2, emoji: '🍄' },
+  { id: 'galaxy',    name: 'גלקסיה',  price: 65,  tier: 3, requireOwned: 4, emoji: '🌌' },
+  { id: 'neon',      name: 'ניאון',    price: 80,  tier: 3, requireOwned: 4, emoji: '✨' },
+  { id: 'legendary', name: 'אגדי',     price: 120, tier: 4, requireOwned: 6, emoji: '🏆' },
+];
+
 let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   coins: 0,
   ownedSkins: ['classic'],
@@ -552,12 +581,19 @@ let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   ownedBurgerSkins: ['classic'],
   activeBurgerSkin: 'classic',
   burgerPurchaseCount: 0,
+  ownedPizzaSkins: ['classic'],
+  activePizzaSkin: 'classic',
+  pizzaPurchaseCount: 0,
 };
 
 // Migrate old saves that lack burger skin fields
 if (!shopData.ownedBurgerSkins) shopData.ownedBurgerSkins = ['classic'];
 if (!shopData.activeBurgerSkin) shopData.activeBurgerSkin = 'classic';
 if (!shopData.burgerPurchaseCount) shopData.burgerPurchaseCount = 0;
+// Migrate old saves that lack pizza skin fields
+if (!shopData.ownedPizzaSkins) shopData.ownedPizzaSkins = ['classic'];
+if (!shopData.activePizzaSkin) shopData.activePizzaSkin = 'classic';
+if (!shopData.pizzaPurchaseCount) shopData.pizzaPurchaseCount = 0;
 
 function saveShop() {
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
@@ -949,8 +985,10 @@ function openShop() {
   activeShopTab = 'basket';
   document.getElementById('panel-basket').style.display = '';
   document.getElementById('panel-burger').style.display = 'none';
+  document.getElementById('panel-pizza').style.display = 'none';
   document.getElementById('tab-basket').className = 'shop-tab active';
   document.getElementById('tab-burger').className  = 'shop-tab';
+  document.getElementById('tab-pizza').className   = 'shop-tab';
   renderShop();
   document.getElementById('shop-overlay').style.display = 'flex';
 }
@@ -1111,10 +1149,13 @@ let activeShopTab = 'basket';
 function switchShopTab(tab) {
   activeShopTab = tab;
   document.getElementById('panel-basket').style.display = tab === 'basket' ? '' : 'none';
-  document.getElementById('panel-burger').style.display = tab === 'burger'  ? '' : 'none';
+  document.getElementById('panel-burger').style.display = tab === 'burger' ? '' : 'none';
+  document.getElementById('panel-pizza').style.display  = tab === 'pizza'  ? '' : 'none';
   document.getElementById('tab-basket').className = 'shop-tab' + (tab === 'basket' ? ' active' : '');
-  document.getElementById('tab-burger').className  = 'shop-tab' + (tab === 'burger'  ? ' active' : '');
+  document.getElementById('tab-burger').className = 'shop-tab' + (tab === 'burger' ? ' active' : '');
+  document.getElementById('tab-pizza').className  = 'shop-tab' + (tab === 'pizza'  ? ' active' : '');
   if (tab === 'burger') renderBurgerShop();
+  if (tab === 'pizza')  renderPizzaShop();
 }
 
 function renderBurgerShop() {
@@ -1246,6 +1287,129 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Pizza Shop Logic ──────────────────────────────────────────────────────────
+function renderPizzaShop() {
+  const owned = shopData.ownedPizzaSkins.length;
+  document.getElementById('pizza-owned-count').textContent = owned;
+  const pct = (shopData.pizzaPurchaseCount % 5) / 5 * 100;
+  document.getElementById('pizza-purchase-progress').style.width = pct + '%';
+  document.getElementById('pizza-purchase-count-text').textContent =
+    (shopData.pizzaPurchaseCount % 5) + ' / 5';
+
+  const grid = document.getElementById('pizza-skin-grid');
+  grid.innerHTML = '';
+
+  PIZZA_SKINS.forEach(skin => {
+    const isOwned  = shopData.ownedPizzaSkins.includes(skin.id);
+    const isActive = shopData.activePizzaSkin === skin.id;
+    const isLocked = owned < skin.requireOwned;
+    const canAfford = shopData.coins >= skin.price;
+
+    let cardClass = 'skin-card';
+    if (isActive) cardClass += ' active';
+    else if (isOwned) cardClass += ' owned';
+    else if (isLocked) cardClass += ' locked';
+
+    const tierColor = TIER_COLORS[skin.tier];
+    const tierLabel = TIER_STARS[skin.tier] ? TIER_STARS[skin.tier] + ' ' : '';
+
+    let btnHtml;
+    if (isActive) {
+      btnHtml = `<button class="skin-btn btn-active" disabled>✓ פעיל</button>`;
+    } else if (isOwned) {
+      btnHtml = `<button class="skin-btn btn-equip" onclick="equipPizzaSkin('${skin.id}')">לבש</button>`;
+    } else if (isLocked) {
+      btnHtml = `<button class="skin-btn btn-locked" disabled>🔒 צריך ${skin.requireOwned}</button>`;
+    } else {
+      btnHtml = `<button class="skin-btn btn-buy" onclick="buyPizzaSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
+    }
+
+    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
+
+    grid.innerHTML += `
+      <div class="${cardClass}">
+        <canvas class="skin-preview" id="ppreview-${skin.id}" width="88" height="52"></canvas>
+        <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
+        <div class="skin-name">${skin.emoji} ${skin.name}</div>
+        ${priceInfo}
+        ${btnHtml}
+      </div>`;
+  });
+
+  requestAnimationFrame(drawPizzaSkinPreviews);
+}
+
+function drawPizzaSkinPreviews() {
+  PIZZA_SKINS.forEach(skin => {
+    const pc = document.getElementById(`ppreview-${skin.id}`);
+    if (!pc) return;
+    const pctx = pc.getContext('2d');
+    const pw = pc.width, ph = pc.height;
+    pctx.clearRect(0, 0, pw, ph);
+
+    const isLocked = shopData.ownedPizzaSkins.length < skin.requireOwned;
+    const bg = pctx.createLinearGradient(0, 0, 0, ph);
+    bg.addColorStop(0, isLocked ? '#1a1a2e' : '#d4ecf7');
+    bg.addColorStop(1, isLocked ? '#0d0a2e' : '#c1dff0');
+    pctx.fillStyle = bg;
+    if (pctx.roundRect) { pctx.roundRect(0, 0, pw, ph, 6); pctx.fill(); }
+    else { pctx.fillRect(0, 0, pw, ph); }
+
+    if (isLocked) {
+      pctx.fillStyle = 'rgba(255,255,255,0.3)';
+      pctx.font = 'bold 18px Arial';
+      pctx.textAlign = 'center';
+      pctx.fillText('🔒', pw / 2, ph / 2 + 7);
+    } else {
+      drawPizza(pctx, pw / 2, ph * 0.6, 26, skin.id);
+    }
+  });
+}
+
+function buyPizzaSkin(skinId) {
+  const skin = PIZZA_SKINS.find(s => s.id === skinId);
+  if (!skin || shopData.ownedPizzaSkins.includes(skinId)) return;
+  if (shopData.coins < skin.price) return;
+  if (shopData.ownedPizzaSkins.length < skin.requireOwned) return;
+
+  shopData.coins -= skin.price;
+  shopData.ownedPizzaSkins.push(skinId);
+  shopData.pizzaPurchaseCount++;
+  shopData.activePizzaSkin = skinId;
+  saveShop();
+  coinsEl.textContent = shopData.coins;
+
+  checkFreePizzaSkin();
+  document.getElementById('shop-coins-val').textContent = shopData.coins;
+  renderPizzaShop();
+  showToast(`🎉 קנית את סקין הפיצה "${skin.name}"!`);
+}
+
+function equipPizzaSkin(skinId) {
+  shopData.activePizzaSkin = skinId;
+  saveShop();
+  renderPizzaShop();
+}
+
+function checkFreePizzaSkin() {
+  if (shopData.pizzaPurchaseCount > 0 && shopData.pizzaPurchaseCount % 5 === 0) {
+    const freeSkin = PIZZA_SKINS.find(s =>
+      !shopData.ownedPizzaSkins.includes(s.id) &&
+      shopData.ownedPizzaSkins.length >= s.requireOwned
+    );
+    if (freeSkin) {
+      shopData.ownedPizzaSkins.push(freeSkin.id);
+      saveShop();
+      setTimeout(() => showToast(`🎁 סקין פיצה חינם! קיבלת: "${freeSkin.name}" ${freeSkin.emoji}`), 600);
+    } else {
+      shopData.coins += 20;
+      saveShop();
+      coinsEl.textContent = shopData.coins;
+      setTimeout(() => showToast('🎁 סקין חינם! קיבלת 20 מטבעות 🪙'), 600);
+    }
+  }
 }
 
 // ── Clouds ───────────────────────────────────────────────────────────────────
@@ -1663,6 +1827,212 @@ function spawnBurger() {
   });
 }
 
+// ── Pizza spawn ───────────────────────────────────────────────────────────────
+function spawnPizza() {
+  const size = 32 + Math.random() * 14;
+  const speed = (1.2 + level * 0.35) * (0.85 + Math.random() * 0.3);
+  pizzas.push({
+    x: size + Math.random() * (W - size * 2),
+    y: -size, size, speed,
+    wobble: Math.random() * Math.PI * 2,
+    wobbleSpeed: 0.035 + Math.random() * 0.025,
+    spin: Math.random() * Math.PI * 2,
+    spinSpeed: (Math.random() - 0.5) * 0.04
+  });
+}
+
+// ── Pizza drawing ─────────────────────────────────────────────────────────────
+function drawPizza(c, x, y, size, skinId) {
+  const s = size / 40;
+  c.save();
+  c.translate(x, y);
+
+  function sliceShape(ctx2) {
+    ctx2.beginPath();
+    ctx2.moveTo(0, 22 * s);
+    ctx2.lineTo(-21 * s, -14 * s);
+    ctx2.arc(0, -14 * s, 21 * s, Math.PI, 0, false);
+    ctx2.closePath();
+  }
+
+  function drawSauce(ctx2, color) {
+    ctx2.fillStyle = color;
+    ctx2.beginPath();
+    ctx2.moveTo(0, 14 * s);
+    ctx2.lineTo(-17 * s, -10 * s);
+    ctx2.lineTo(17 * s, -10 * s);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+
+  function drawCheese(ctx2, color) {
+    ctx2.fillStyle = color;
+    ctx2.beginPath();
+    ctx2.moveTo(0, 8 * s);
+    ctx2.lineTo(-13 * s, -8 * s);
+    ctx2.lineTo(13 * s, -8 * s);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+
+  switch (skinId) {
+    case 'classic':
+    default: {
+      c.fillStyle = '#d4874a';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#cc2200');
+      drawCheese(c, '#ffdd55');
+      c.fillStyle = '#aa1100';
+      [[-5 * s, -1 * s], [5 * s, 1 * s], [0 * s, 6 * s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 3 * s, 0, Math.PI * 2); c.fill();
+      });
+      break;
+    }
+    case 'cheese': {
+      c.fillStyle = '#c8860a';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#cc3300');
+      c.fillStyle = '#ffe066';
+      c.beginPath();
+      c.moveTo(0, 10 * s);
+      c.lineTo(-15 * s, -9 * s);
+      c.lineTo(15 * s, -9 * s);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = '#ffaa00';
+      c.lineWidth = 1.5 * s;
+      [[-6 * s, -3 * s, 5 * s, 4 * s], [3 * s, -5 * s, 8 * s, 2 * s]].forEach(([x1, y1, x2, y2]) => {
+        c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+      });
+      break;
+    }
+    case 'hawaii': {
+      c.fillStyle = '#d4874a';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#cc2200');
+      drawCheese(c, '#ffdd55');
+      c.fillStyle = '#ffcc00';
+      [[-6 * s, 2 * s], [6 * s, -1 * s], [0 * s, 5 * s]].forEach(([px, py]) => {
+        c.beginPath(); c.ellipse(px, py, 4 * s, 2.5 * s, 0.3, 0, Math.PI * 2); c.fill();
+      });
+      c.fillStyle = '#ff6633';
+      [[-7 * s, -3 * s], [5 * s, 4 * s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 2.5 * s, 0, Math.PI * 2); c.fill();
+      });
+      break;
+    }
+    case 'spicy': {
+      c.shadowColor = '#ff3300'; c.shadowBlur = 10;
+      c.fillStyle = '#7a0f00';
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#9b0000');
+      drawCheese(c, '#cc4400');
+      c.fillStyle = '#ff4400';
+      [[-6 * s, 0], [4 * s, -3 * s], [1 * s, 5 * s]].forEach(([px, py]) => {
+        c.save();
+        c.translate(px, py);
+        c.beginPath();
+        c.moveTo(0, -4 * s); c.quadraticCurveTo(3 * s, 0, 0, 4 * s);
+        c.strokeStyle = '#ff6600'; c.lineWidth = 2 * s; c.stroke();
+        c.restore();
+      });
+      break;
+    }
+    case 'bbq': {
+      c.fillStyle = '#3d1a00';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#5a2500');
+      drawCheese(c, '#c8830a');
+      c.fillStyle = '#6b3300';
+      [[-5 * s, 0], [5 * s, -2 * s], [0, 6 * s]].forEach(([px, py]) => {
+        c.beginPath(); c.ellipse(px, py, 4 * s, 2 * s, 0.2, 0, Math.PI * 2); c.fill();
+      });
+      break;
+    }
+    case 'mushroom': {
+      c.fillStyle = '#8b6914';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#7a4a22');
+      drawCheese(c, '#c8c8b0');
+      c.fillStyle = '#5a3d18';
+      [[-6 * s, 0], [5 * s, 1 * s], [0 * s, 6 * s]].forEach(([px, py]) => {
+        c.beginPath();
+        c.arc(px, py - 2 * s, 3.5 * s, Math.PI, 0);
+        c.lineTo(px + 3.5 * s, py + 2 * s);
+        c.lineTo(px - 3.5 * s, py + 2 * s);
+        c.closePath();
+        c.fill();
+      });
+      break;
+    }
+    case 'galaxy': {
+      c.shadowColor = '#7733ff'; c.shadowBlur = 14;
+      const g = c.createLinearGradient(0, -22 * s, 0, 22 * s);
+      g.addColorStop(0, '#1a004a'); g.addColorStop(1, '#08001a');
+      c.fillStyle = g;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      c.save(); sliceShape(c); c.clip();
+      c.fillStyle = 'rgba(255,255,255,0.85)';
+      [[-14 * s, -8 * s], [2 * s, -12 * s], [10 * s, -4 * s], [-6 * s, 2 * s], [8 * s, 6 * s],
+       [-2 * s, 10 * s], [14 * s, -1 * s], [-10 * s, 14 * s], [5 * s, 14 * s]].forEach(([px, py]) => {
+        c.beginPath(); c.arc(px, py, 1.2 * s, 0, Math.PI * 2); c.fill();
+      });
+      c.restore();
+      c.strokeStyle = '#aa55ff'; c.lineWidth = 1.5 * s;
+      c.beginPath(); c.arc(0, -14 * s, 21 * s, Math.PI + 0.2, -0.2); c.stroke();
+      break;
+    }
+    case 'neon': {
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 18;
+      c.fillStyle = '#001a14';
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 8;
+      drawSauce(c, '#004433');
+      c.shadowColor = '#ffff00'; c.shadowBlur = 8;
+      drawCheese(c, '#003322');
+      c.shadowBlur = 0;
+      c.shadowColor = '#ff00ff'; c.shadowBlur = 12;
+      c.strokeStyle = '#ff00ff'; c.lineWidth = 2 * s;
+      sliceShape(c); c.stroke();
+      c.shadowColor = '#00ffcc'; c.shadowBlur = 12;
+      c.strokeStyle = '#00ffcc'; c.lineWidth = 1.2 * s;
+      c.beginPath(); c.arc(0, -14 * s, 21 * s, Math.PI, 0); c.stroke();
+      c.shadowBlur = 0;
+      break;
+    }
+    case 'legendary': {
+      c.shadowColor = 'rgba(255,215,0,0.8)'; c.shadowBlur = 16;
+      const gl = c.createLinearGradient(-21 * s, -14 * s, 21 * s, 22 * s);
+      gl.addColorStop(0, '#ffd700'); gl.addColorStop(0.4, '#ffe86e');
+      gl.addColorStop(0.7, '#c8a000'); gl.addColorStop(1, '#a07800');
+      c.fillStyle = gl;
+      sliceShape(c); c.fill();
+      c.shadowBlur = 0;
+      drawSauce(c, '#cc6600');
+      drawCheese(c, '#ffe066');
+      c.fillStyle = '#ffffff';
+      [[-7 * s, -2 * s], [5 * s, 2 * s], [0 * s, 8 * s]].forEach(([px, py]) => {
+        c.save(); c.translate(px, py);
+        c.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (i * 4 * Math.PI / 5) - Math.PI / 2;
+          const r = i % 2 === 0 ? 3 * s : 1.5 * s;
+          i === 0 ? c.moveTo(Math.cos(a) * r, Math.sin(a) * r)
+                  : c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        c.closePath(); c.fill();
+        c.restore();
+      });
+      break;
+    }
+  }
+
+  c.restore();
+}
+
 // ── Level up ──────────────────────────────────────────────────────────────────
 function checkLevel() {
   const newLevel = Math.floor(score / 10) + 1;
@@ -1686,6 +2056,13 @@ function update() {
     spawnTimer = 0;
   }
 
+  pizzaSpawnTimer++;
+  if (pizzaSpawnTimer >= pizzaSpawnInterval) {
+    spawnPizza();
+    pizzaSpawnTimer = 0;
+    pizzaSpawnInterval = Math.max(80, 210 - (level - 1) * 15);
+  }
+
   burgers = burgers.filter(b => {
     b.wobble += b.wobbleSpeed;
     b.x += Math.sin(b.wobble) * 0.8;
@@ -1701,6 +2078,32 @@ function update() {
         checkLevel();
         return false;
       } else if (b.y - b.size > H) {
+        missCount++;
+        lives--;
+        livesEl.textContent = lives;
+        if (lives <= 0) { gameOver(); return false; }
+        return false;
+      }
+    }
+    return true;
+  });
+
+  pizzas = pizzas.filter(p => {
+    p.wobble += p.wobbleSpeed;
+    p.x += Math.sin(p.wobble) * 0.7;
+    p.y += p.speed;
+    p.spin += p.spinSpeed;
+
+    if (p.y + p.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
+      if (Math.abs(p.x - basketX) < BASKET_W / 2 + p.size * 0.3) {
+        score += 2;
+        scoreEl.textContent = score;
+        addCoins(2);
+        spawnParticles(p.x, BASKET_Y - BASKET_H / 2);
+        spawnFloatingText(p.x, BASKET_Y - BASKET_H / 2 - 20, '🍕 פיצה! +2');
+        checkLevel();
+        return false;
+      } else if (p.y - p.size > H) {
         missCount++;
         lives--;
         livesEl.textContent = lives;
@@ -1743,6 +2146,13 @@ function draw() {
   ctx.clearRect(0, 0, W, H);
   drawBackground();
   burgers.forEach(b => drawBurger(ctx, b.x, b.y, b.size, false, shopData.activeBurgerSkin));
+  pizzas.forEach(p => {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.spin);
+    drawPizza(ctx, 0, 0, p.size, shopData.activePizzaSkin);
+    ctx.restore();
+  });
   drawBasket();
   drawParticles();
   drawFloatingTexts();
@@ -1808,8 +2218,9 @@ function gameOver() {
 window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
+  pizzaSpawnTimer = 0; pizzaSpawnInterval = 210;
   paused = false;
-  burgers = []; particles = []; floatingTexts = [];
+  burgers = []; pizzas = []; particles = []; floatingTexts = [];
   basketX = W / 2;
   pauseBtn.textContent = '⏸ השהה';
   pauseBtn.style.display = 'block';
