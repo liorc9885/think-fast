@@ -472,6 +472,107 @@
 <!-- Toast -->
 <div id="toast"></div>
 
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://dhtjnpdwvuwgzdymfkra.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodGpucGR3dnV3Z3pkeW1ma3JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTAyNzksImV4cCI6MjA5NzA2NjI3OX0.xhC4aa_9v8AzhZoyOIFal1CP-wWUYVPlV9-mGzZJURM';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function getPlayerId() {
+  let id = localStorage.getItem('thinkFastPlayerId');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('thinkFastPlayerId', id);
+    console.log('[Supabase] נוצר player_id חדש:', id);
+  }
+  return id;
+}
+
+async function loadFromSupabase() {
+  const playerId = getPlayerId();
+  console.log('[Supabase] טוען נתונים עבור player_id:', playerId);
+  const { data, error } = await supabase
+    .from('player_progress')
+    .select('*')
+    .eq('player_id', playerId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      console.log('[Supabase] לא נמצא רשומה — שחקן חדש, מתחיל עם ברירות מחדל');
+    } else {
+      console.error('[Supabase] שגיאה בטעינה:', error.code, error.message, error.details);
+    }
+    return null;
+  }
+
+  console.log('[Supabase] נטענו נתונים בהצלחה:', data);
+  return {
+    coins: data.coins,
+    ownedSkins: data.owned_skins,
+    activeSkin: data.active_skin,
+    purchaseCount: data.purchase_count,
+    ownedBurgerSkins: data.owned_burger_skins,
+    activeBurgerSkin: data.active_burger_skin,
+    burgerPurchaseCount: data.burger_purchase_count,
+    ownedPizzaSkins: data.owned_pizza_skins,
+    activePizzaSkin: data.active_pizza_skin,
+    pizzaPurchaseCount: data.pizza_purchase_count,
+  };
+}
+
+async function saveToSupabase(shopData) {
+  const playerId = getPlayerId();
+  const payload = {
+    player_id: playerId,
+    coins: shopData.coins,
+    owned_skins: shopData.ownedSkins,
+    active_skin: shopData.activeSkin,
+    purchase_count: shopData.purchaseCount,
+    owned_burger_skins: shopData.ownedBurgerSkins,
+    active_burger_skin: shopData.activeBurgerSkin,
+    burger_purchase_count: shopData.burgerPurchaseCount,
+    owned_pizza_skins: shopData.ownedPizzaSkins,
+    active_pizza_skin: shopData.activePizzaSkin,
+    pizza_purchase_count: shopData.pizzaPurchaseCount,
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log('[Supabase] שומר נתונים:', payload);
+
+  const { data, error } = await supabase
+    .from('player_progress')
+    .upsert(payload, { onConflict: 'player_id' });
+
+  if (error) {
+    console.error('[Supabase] שגיאה בשמירה:', error.code, error.message, error.details, error.hint);
+  } else {
+    console.log('[Supabase] נשמר בהצלחה', data);
+  }
+}
+
+window._supabaseSave = saveToSupabase;
+window._supabaseLoad = loadFromSupabase;
+window._supabaseReady = false;
+
+loadFromSupabase().then(remote => {
+  if (remote) {
+    const local = JSON.parse(localStorage.getItem('thinkFastShop') || 'null');
+    if (!local || remote.coins >= local.coins) {
+      console.log('[Supabase] משתמש בנתוני ענן (מטבעות:', remote.coins, ')');
+      Object.assign(window._pendingShopData || {}, remote);
+      window._remoteShopData = remote;
+    } else {
+      console.log('[Supabase] נתונים מקומיים חדשים יותר (מטבעות מקומיים:', local.coins, 'ענן:', remote.coins, ') — שומר מקומיים לענן');
+      saveToSupabase(local);
+    }
+  }
+  window._supabaseReady = true;
+  console.log('[Supabase] אתחול הושלם');
+});
+</script>
+
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
@@ -586,6 +687,12 @@ let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   pizzaPurchaseCount: 0,
 };
 
+// Apply remote data if loaded before this script ran
+if (window._remoteShopData) {
+  Object.assign(shopData, window._remoteShopData);
+  console.log('[Shop] הוחלו נתוני ענן על shopData');
+}
+
 // Migrate old saves that lack burger skin fields
 if (!shopData.ownedBurgerSkins) shopData.ownedBurgerSkins = ['classic'];
 if (!shopData.activeBurgerSkin) shopData.activeBurgerSkin = 'classic';
@@ -597,6 +704,11 @@ if (!shopData.pizzaPurchaseCount) shopData.pizzaPurchaseCount = 0;
 
 function saveShop() {
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  if (window._supabaseSave) {
+    window._supabaseSave(shopData);
+  } else {
+    console.warn('[Shop] Supabase לא מוכן עדיין — נשמר רק ב-localStorage');
+  }
 }
 
 function addCoins(n) {
