@@ -2128,14 +2128,11 @@ function renderShop() {
       btnHtml = `<button class="skin-btn btn-buy" onclick="buySkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
     }
 
-    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
-
     grid.innerHTML += `
       <div class="${cardClass}">
         <canvas class="skin-preview" id="preview-${skin.id}" width="88" height="52"></canvas>
         <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
         <div class="skin-name">${skin.emoji} ${skin.name}</div>
-        ${priceInfo}
         ${btnHtml}
       </div>`;
   });
@@ -2257,14 +2254,11 @@ function renderBurgerShop() {
       btnHtml = `<button class="skin-btn btn-buy" onclick="buyBurgerSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
     }
 
-    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
-
     grid.innerHTML += `
       <div class="${cardClass}">
         <canvas class="skin-preview" id="bpreview-${skin.id}" width="88" height="52"></canvas>
         <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
         <div class="skin-name">${skin.emoji} ${skin.name}</div>
-        ${priceInfo}
         ${btnHtml}
       </div>`;
   });
@@ -2363,14 +2357,11 @@ function renderPizzaShop() {
       btnHtml = `<button class="skin-btn btn-buy" onclick="buyPizzaSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
     }
 
-    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
-
     grid.innerHTML += `
       <div class="${cardClass}">
         <canvas class="skin-preview" id="ppreview-${skin.id}" width="88" height="52"></canvas>
         <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
         <div class="skin-name">${skin.emoji} ${skin.name}</div>
-        ${priceInfo}
         ${btnHtml}
       </div>`;
   });
@@ -2460,14 +2451,11 @@ function renderSaladShop() {
       btnHtml = `<button class="skin-btn btn-buy" onclick="buySaladSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
     }
 
-    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
-
     grid.innerHTML += `
       <div class="${cardClass}">
         <div class="skin-preview" id="slpreview-${skin.id}" style="width:88px;height:52px;display:flex;align-items:center;justify-content:center;font-size:2rem;">${isOwned || skin.price === 0 ? skin.emoji : '🔒'}</div>
         <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
         <div class="skin-name">${skin.emoji} ${skin.name}</div>
-        ${priceInfo}
         ${btnHtml}
       </div>`;
   });
