@@ -509,6 +509,7 @@
       <button class="shop-tab active" id="tab-basket" onclick="switchShopTab('basket')">🧺 סל</button>
       <button class="shop-tab" id="tab-burger" onclick="switchShopTab('burger')">🍔 המבורגר</button>
       <button class="shop-tab" id="tab-pizza" onclick="switchShopTab('pizza')">🍕 פיצה</button>
+      <button class="shop-tab" id="tab-salad" onclick="switchShopTab('salad')">🥗 סלט</button>
     </div>
 
     <!-- Basket skins panel -->
@@ -527,6 +528,12 @@
     <div id="panel-pizza" style="display:none">
       <div id="pizza-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני הפיצה שלך: <b id="pizza-owned-count">1</b></div>
       <div id="pizza-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
+    </div>
+
+    <!-- Salad skins panel -->
+    <div id="panel-salad" style="display:none">
+      <div id="salad-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני הסלט שלך: <b id="salad-owned-count">1</b></div>
+      <div id="salad-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
     </div>
   </div>
 </div>
@@ -581,6 +588,9 @@ async function loadFromSupabase() {
     ownedPizzaSkins: data.owned_pizza_skins,
     activePizzaSkin: data.active_pizza_skin,
     pizzaPurchaseCount: data.pizza_purchase_count,
+    ownedSaladSkins: data.owned_salad_skins,
+    activeSaladSkin: data.active_salad_skin,
+    saladPurchaseCount: data.salad_purchase_count,
   };
 }
 
@@ -598,6 +608,9 @@ async function saveToSupabase(shopData) {
     owned_pizza_skins: shopData.ownedPizzaSkins,
     active_pizza_skin: shopData.activePizzaSkin,
     pizza_purchase_count: shopData.pizzaPurchaseCount,
+    owned_salad_skins: shopData.ownedSaladSkins,
+    active_salad_skin: shopData.activeSaladSkin,
+    salad_purchase_count: shopData.saladPurchaseCount,
     updated_at: new Date().toISOString(),
   };
 
@@ -649,9 +662,10 @@ const overlay = document.getElementById('overlay');
 // ── State ────────────────────────────────────────────────────────────────────
 let score = 0, lives = 3, level = 1, missCount = 0;
 let running = false, paused = false, animId = null;
-let burgers = [], pizzas = [], particles = [], clouds = [], floatingTexts = [];
+let burgers = [], pizzas = [], salads = [], particles = [], clouds = [], floatingTexts = [];
 let spawnTimer = 0, spawnInterval = 90;
 let pizzaSpawnTimer = 0, pizzaSpawnInterval = 210;
+let saladSpawnTimer = 0, saladSpawnInterval = 180;
 let frameCount = 0;
 
 // ── Basket ────────────────────────────────────────────────────────────────────
@@ -768,6 +782,108 @@ const BURGER_SKINS = [
   { id: 'cosmic',     name: 'קוסמי',    price: 38,  tier: 2, requireOwned: 2, emoji: '🪐' },
   { id: 'aurora',     name: 'אורורה',   price: 75,  tier: 3, requireOwned: 5, emoji: '🌠' },
   { id: 'magma',      name: 'מגמה',     price: 68,  tier: 3, requireOwned: 5, emoji: '🔥' },
+  { id: 'cherry',      name: 'דובדבן',      price: 11,  tier: 1, requireOwned: 0, emoji: '🍒' },
+  { id: 'honey',       name: 'דבש',         price: 13,  tier: 1, requireOwned: 0, emoji: '🍯' },
+  { id: 'mint',        name: 'נענע',        price: 14,  tier: 1, requireOwned: 0, emoji: '🌿' },
+  { id: 'cinnamon',    name: 'קינמון',      price: 16,  tier: 1, requireOwned: 0, emoji: '🟤' },
+  { id: 'maple',       name: 'מייפל',       price: 18,  tier: 1, requireOwned: 0, emoji: '🍁' },
+  { id: 'wasabi',      name: 'וואסאבי',     price: 12,  tier: 1, requireOwned: 0, emoji: '🟢' },
+  { id: 'truffle_b',   name: 'כמהין',       price: 19,  tier: 1, requireOwned: 0, emoji: '🍫' },
+  { id: 'avocado',     name: 'אבוקדו',      price: 15,  tier: 1, requireOwned: 0, emoji: '🥑' },
+  { id: 'mushroom_b',  name: 'פטריות',      price: 17,  tier: 1, requireOwned: 0, emoji: '🍄' },
+  { id: 'bacon',       name: 'בייקון',      price: 20,  tier: 1, requireOwned: 0, emoji: '🥓' },
+  { id: 'blue',        name: 'כחול',        price: 33,  tier: 2, requireOwned: 2, emoji: '💙' },
+  { id: 'purple',      name: 'סגול',        price: 36,  tier: 2, requireOwned: 2, emoji: '💜' },
+  { id: 'pink',        name: 'ורוד',        price: 30,  tier: 2, requireOwned: 2, emoji: '🌸' },
+  { id: 'volcano',     name: 'וולקנו',      price: 40,  tier: 2, requireOwned: 2, emoji: '🌋' },
+  { id: 'bronze',      name: 'ברונזה',      price: 32,  tier: 2, requireOwned: 2, emoji: '🥉' },
+  { id: 'silver',      name: 'כסף',         price: 38,  tier: 2, requireOwned: 2, emoji: '🥈' },
+  { id: 'topaz',       name: 'טופז',        price: 45,  tier: 2, requireOwned: 2, emoji: '🟡' },
+  { id: 'jade',        name: 'ג׳ייד',       price: 42,  tier: 2, requireOwned: 2, emoji: '💚' },
+  { id: 'ruby',        name: 'רובי',        price: 48,  tier: 2, requireOwned: 2, emoji: '❤️' },
+  { id: 'sapphire',    name: 'ספיר',        price: 50,  tier: 2, requireOwned: 2, emoji: '💎' },
+  { id: 'storm',       name: 'סערה',        price: 60,  tier: 3, requireOwned: 5, emoji: '🌪️' },
+  { id: 'blizzard',    name: 'בליזארד',     price: 65,  tier: 3, requireOwned: 5, emoji: '🌨️' },
+  { id: 'volcano2',    name: 'הר געש',      price: 70,  tier: 3, requireOwned: 5, emoji: '🔴' },
+  { id: 'jungle',      name: 'ג׳ונגל',      price: 58,  tier: 3, requireOwned: 5, emoji: '🌴' },
+  { id: 'desert',      name: 'מדבר',        price: 62,  tier: 3, requireOwned: 5, emoji: '🏜️' },
+  { id: 'tundra',      name: 'טונדרה',      price: 67,  tier: 3, requireOwned: 5, emoji: '🏔️' },
+  { id: 'deep_sea',    name: 'ים עמוק',     price: 72,  tier: 3, requireOwned: 5, emoji: '🦑' },
+  { id: 'volcano3',    name: 'אש ולבה',     price: 75,  tier: 3, requireOwned: 5, emoji: '🌊' },
+  { id: 'nebula',      name: 'ערפילית',     price: 80,  tier: 3, requireOwned: 5, emoji: '🌌' },
+  { id: 'prism',       name: 'פריזמה',      price: 85,  tier: 3, requireOwned: 5, emoji: '🔮' },
+  { id: 'quantum',     name: 'קוונטום',     price: 90,  tier: 3, requireOwned: 5, emoji: '⚛️' },
+  { id: 'astral',      name: 'אסטרלי',      price: 95,  tier: 3, requireOwned: 5, emoji: '🌟' },
+  { id: 'void',        name: 'ריק',         price: 88,  tier: 3, requireOwned: 5, emoji: '🌑' },
+  { id: 'phantom',     name: 'פנטום',       price: 77,  tier: 3, requireOwned: 5, emoji: '👻' },
+  { id: 'specter',     name: 'רוח רפאים',  price: 83,  tier: 3, requireOwned: 5, emoji: '💀' },
+  { id: 'unicorn',     name: 'חד קרן',      price: 73,  tier: 3, requireOwned: 5, emoji: '🦄' },
+  { id: 'phoenix',     name: 'פניקס',       price: 98,  tier: 3, requireOwned: 5, emoji: '🔥' },
+  { id: 'mermaid',     name: 'בת ים',       price: 68,  tier: 3, requireOwned: 5, emoji: '🧜' },
+  { id: 'griffin',     name: 'גריפין',      price: 92,  tier: 3, requireOwned: 5, emoji: '🦅' },
+  { id: 'hydra',       name: 'הידרה',       price: 78,  tier: 3, requireOwned: 5, emoji: '🐍' },
+  { id: 'eclipse',     name: 'ליקוי',       price: 100, tier: 3, requireOwned: 5, emoji: '🌑' },
+  { id: 'comet',       name: 'שביט',        price: 56,  tier: 3, requireOwned: 5, emoji: '☄️' },
+  { id: 'supernova',   name: 'סופרנובה',    price: 63,  tier: 3, requireOwned: 5, emoji: '💥' },
+  { id: 'pulsar',      name: 'פולסר',       price: 69,  tier: 3, requireOwned: 5, emoji: '⭐' },
+  { id: 'quasar',      name: 'קוואזר',      price: 74,  tier: 3, requireOwned: 5, emoji: '🔭' },
+  { id: 'obsidian',    name: 'אובסידיאן',   price: 120, tier: 4, requireOwned: 8, emoji: '⬛' },
+  { id: 'platinum',    name: 'פלטינה',      price: 140, tier: 4, requireOwned: 8, emoji: '🤍' },
+  { id: 'onyx',        name: 'אוניקס',      price: 130, tier: 4, requireOwned: 8, emoji: '🖤' },
+  { id: 'opal',        name: 'אופל',        price: 150, tier: 4, requireOwned: 8, emoji: '🌈' },
+  { id: 'diamond_b',   name: 'יהלום',       price: 180, tier: 4, requireOwned: 8, emoji: '💍' },
+  { id: 'void_king',   name: 'מלך הריק',    price: 200, tier: 4, requireOwned: 8, emoji: '👑' },
+  { id: 'nebula2',     name: 'ענן כוכבים',  price: 160, tier: 4, requireOwned: 8, emoji: '🌠' },
+  { id: 'celestial',   name: 'שמיימי',      price: 175, tier: 4, requireOwned: 8, emoji: '✨' },
+  { id: 'inferno',     name: 'אינפרנו',     price: 165, tier: 4, requireOwned: 8, emoji: '🌋' },
+  { id: 'venom',       name: 'ארס',         price: 145, tier: 4, requireOwned: 8, emoji: '🕷️' },
+  { id: 'frost_king',  name: 'מלך הקרח',    price: 155, tier: 4, requireOwned: 8, emoji: '🧊' },
+  { id: 'thunder_god', name: 'אל הברק',     price: 190, tier: 4, requireOwned: 8, emoji: '⚡' },
+  { id: 'lava_king',   name: 'מלך הלבה',    price: 170, tier: 4, requireOwned: 8, emoji: '🔥' },
+  { id: 'ocean_lord',  name: 'אדון הים',    price: 185, tier: 4, requireOwned: 8, emoji: '🌊' },
+  { id: 'solar',       name: 'סולארי',      price: 135, tier: 4, requireOwned: 8, emoji: '☀️' },
+  { id: 'lunar',       name: 'ירחי',        price: 125, tier: 4, requireOwned: 8, emoji: '🌙' },
+  { id: 'autumn',      name: 'סתיו',        price: 11,  tier: 1, requireOwned: 0, emoji: '🍂' },
+  { id: 'spring',      name: 'אביב',        price: 13,  tier: 1, requireOwned: 0, emoji: '🌸' },
+  { id: 'summer',      name: 'קיץ',         price: 15,  tier: 1, requireOwned: 0, emoji: '🌞' },
+  { id: 'winter',      name: 'חורף',        price: 17,  tier: 1, requireOwned: 0, emoji: '⛄' },
+  { id: 'rainy',       name: 'גשמי',        price: 12,  tier: 1, requireOwned: 0, emoji: '🌧️' },
+  { id: 'sunny',       name: 'שמשי',        price: 10,  tier: 1, requireOwned: 0, emoji: '☀️' },
+  { id: 'cloudy',      name: 'מעונן',       price: 14,  tier: 1, requireOwned: 0, emoji: '☁️' },
+  { id: 'windy',       name: 'סוחף',        price: 16,  tier: 1, requireOwned: 0, emoji: '💨' },
+  { id: 'tornado',     name: 'טורנדו',      price: 20,  tier: 1, requireOwned: 0, emoji: '🌪️' },
+  { id: 'hurricane',   name: 'הוריקן',      price: 18,  tier: 1, requireOwned: 0, emoji: '🌀' },
+  { id: 'lion',        name: 'אריה',        price: 35,  tier: 2, requireOwned: 2, emoji: '🦁' },
+  { id: 'tiger',       name: 'נמר',         price: 37,  tier: 2, requireOwned: 2, emoji: '🐯' },
+  { id: 'wolf',        name: 'זאב',         price: 39,  tier: 2, requireOwned: 2, emoji: '🐺' },
+  { id: 'bear',        name: 'דוב',         price: 33,  tier: 2, requireOwned: 2, emoji: '🐻' },
+  { id: 'eagle',       name: 'נשר',         price: 41,  tier: 2, requireOwned: 2, emoji: '🦅' },
+  { id: 'shark',       name: 'כריש',        price: 44,  tier: 2, requireOwned: 2, emoji: '🦈' },
+  { id: 'panda',       name: 'פנדה',        price: 31,  tier: 2, requireOwned: 2, emoji: '🐼' },
+  { id: 'fox',         name: 'שועל',        price: 34,  tier: 2, requireOwned: 2, emoji: '🦊' },
+  { id: 'penguin',     name: 'פינגווין',    price: 43,  tier: 2, requireOwned: 2, emoji: '🐧' },
+  { id: 'polar_bear',  name: 'דוב קוטב',   price: 47,  tier: 2, requireOwned: 2, emoji: '🐻‍❄️' },
+  { id: 'knight',      name: 'אביר',        price: 57,  tier: 3, requireOwned: 5, emoji: '⚔️' },
+  { id: 'wizard',      name: 'קוסם',        price: 61,  tier: 3, requireOwned: 5, emoji: '🧙' },
+  { id: 'pirate',      name: 'פיראט',       price: 66,  tier: 3, requireOwned: 5, emoji: '🏴‍☠️' },
+  { id: 'ninja',       name: 'נינג׳ה',      price: 71,  tier: 3, requireOwned: 5, emoji: '🥷' },
+  { id: 'viking',      name: 'ויקינג',      price: 76,  tier: 3, requireOwned: 5, emoji: '🪖' },
+  { id: 'samurai',     name: 'סמוראי',      price: 81,  tier: 3, requireOwned: 5, emoji: '🗡️' },
+  { id: 'gladiator',   name: 'גלדיאטור',    price: 86,  tier: 3, requireOwned: 5, emoji: '🛡️' },
+  { id: 'alchemist',   name: 'אלכימאי',     price: 91,  tier: 3, requireOwned: 5, emoji: '⚗️' },
+  { id: 'astronaut',   name: 'אסטרונאוט',   price: 96,  tier: 3, requireOwned: 5, emoji: '👨‍🚀' },
+  { id: 'robot',       name: 'רובוט',       price: 59,  tier: 3, requireOwned: 5, emoji: '🤖' },
+  { id: 'cyber',       name: 'סייבר',       price: 64,  tier: 3, requireOwned: 5, emoji: '💻' },
+  { id: 'steampunk',   name: 'סטימפאנק',    price: 79,  tier: 3, requireOwned: 5, emoji: '⚙️' },
+  { id: 'nanobot',     name: 'ננו-בוט',     price: 84,  tier: 3, requireOwned: 5, emoji: '🔬' },
+  { id: 'hologram',    name: 'הולוגרם',     price: 89,  tier: 3, requireOwned: 5, emoji: '📡' },
+  { id: 'matrix',      name: 'מטריקס',      price: 94,  tier: 3, requireOwned: 5, emoji: '🖥️' },
+  { id: 'galactic',    name: 'גלקטי',       price: 99,  tier: 3, requireOwned: 5, emoji: '🚀' },
+  { id: 'mythic',      name: 'מיתי',        price: 110, tier: 4, requireOwned: 8, emoji: '⚜️' },
+  { id: 'eternal',     name: 'נצחי',        price: 200, tier: 4, requireOwned: 8, emoji: '♾️' },
+  { id: 'omega',       name: 'אומגה',       price: 195, tier: 4, requireOwned: 8, emoji: '🔱' },
+  { id: 'alpha',       name: 'אלפא',        price: 115, tier: 4, requireOwned: 8, emoji: '🅰️' },
+  { id: 'prime',       name: 'פריים',       price: 150, tier: 4, requireOwned: 8, emoji: '💠' },
 ];
 
 const PIZZA_SKINS = [
@@ -800,6 +916,295 @@ const PIZZA_SKINS = [
   { id: 'lava',      name: 'לבה',      price: 35,  tier: 2, requireOwned: 2, emoji: '🌋' },
   { id: 'aurora',    name: 'אורורה',   price: 72,  tier: 3, requireOwned: 5, emoji: '🌠' },
   { id: 'dragon',    name: 'דרקון',    price: 150, tier: 4, requireOwned: 8, emoji: '🐉' },
+  { id: 'pesto',       name: 'פסטו',        price: 10,  tier: 1, requireOwned: 0, emoji: '🌿' },
+  { id: 'margherita',  name: 'מרגריטה',     price: 12,  tier: 1, requireOwned: 0, emoji: '🍅' },
+  { id: 'pepperoni',   name: 'פפרוני',      price: 15,  tier: 1, requireOwned: 0, emoji: '🌶️' },
+  { id: 'olive',       name: 'זיתים',       price: 11,  tier: 1, requireOwned: 0, emoji: '🫒' },
+  { id: 'capricciosa', name: 'קפריצ׳וזה',   price: 18,  tier: 1, requireOwned: 0, emoji: '🥚' },
+  { id: 'four_seasons',name: 'ארבע עונות',  price: 16,  tier: 1, requireOwned: 0, emoji: '🍂' },
+  { id: 'tuna',        name: 'טונה',        price: 13,  tier: 1, requireOwned: 0, emoji: '🐟' },
+  { id: 'spinach',     name: 'תרד',         price: 14,  tier: 1, requireOwned: 0, emoji: '🥬' },
+  { id: 'corn',        name: 'תירס',        price: 10,  tier: 1, requireOwned: 0, emoji: '🌽' },
+  { id: 'eggplant',    name: 'חציל',        price: 17,  tier: 1, requireOwned: 0, emoji: '🍆' },
+  { id: 'bianca',      name: 'בלנקה',       price: 30,  tier: 2, requireOwned: 2, emoji: '⬜' },
+  { id: 'salami',      name: 'סלמי',        price: 35,  tier: 2, requireOwned: 2, emoji: '🍖' },
+  { id: 'prosciutto',  name: 'פרושוטו',     price: 42,  tier: 2, requireOwned: 2, emoji: '🥩' },
+  { id: 'diavola',     name: 'דיאבולה',     price: 38,  tier: 2, requireOwned: 2, emoji: '😈' },
+  { id: 'calzone',     name: 'קלצונה',      price: 33,  tier: 2, requireOwned: 2, emoji: '🫔' },
+  { id: 'stromboli',   name: 'סטרומבולי',   price: 40,  tier: 2, requireOwned: 2, emoji: '🌀' },
+  { id: 'sicilian',    name: 'סיציליאנית',  price: 44,  tier: 2, requireOwned: 2, emoji: '🇮🇹' },
+  { id: 'napolitan',   name: 'נאפוליטנית',  price: 36,  tier: 2, requireOwned: 2, emoji: '🍋' },
+  { id: 'roman',       name: 'רומית',       price: 48,  tier: 2, requireOwned: 2, emoji: '🏛️' },
+  { id: 'florentine',  name: 'פלורנטינית',  price: 50,  tier: 2, requireOwned: 2, emoji: '🌹' },
+  { id: 'cosmic_p',    name: 'קוסמית',      price: 60,  tier: 3, requireOwned: 5, emoji: '🪐' },
+  { id: 'plasma',      name: 'פלסמה',       price: 65,  tier: 3, requireOwned: 5, emoji: '⚡' },
+  { id: 'solar_p',     name: 'סולארית',     price: 70,  tier: 3, requireOwned: 5, emoji: '☀️' },
+  { id: 'lunar_p',     name: 'ירחית',       price: 75,  tier: 3, requireOwned: 5, emoji: '🌙' },
+  { id: 'stellar',     name: 'כוכבי',       price: 80,  tier: 3, requireOwned: 5, emoji: '⭐' },
+  { id: 'comet_p',     name: 'שביטית',      price: 58,  tier: 3, requireOwned: 5, emoji: '☄️' },
+  { id: 'eclipse_p',   name: 'ליקוי',       price: 85,  tier: 3, requireOwned: 5, emoji: '🌑' },
+  { id: 'meteor',      name: 'מטאור',       price: 63,  tier: 3, requireOwned: 5, emoji: '🌠' },
+  { id: 'aurora_p',    name: 'נצנוץ',       price: 90,  tier: 3, requireOwned: 5, emoji: '🌈' },
+  { id: 'nebula_p',    name: 'ערפילית',     price: 95,  tier: 3, requireOwned: 5, emoji: '🌌' },
+  { id: 'quantum_p',   name: 'קוונטית',     price: 100, tier: 3, requireOwned: 5, emoji: '⚛️' },
+  { id: 'prism_p',     name: 'פריזמה',      price: 55,  tier: 3, requireOwned: 5, emoji: '🔮' },
+  { id: 'astral_p',    name: 'אסטרלית',     price: 68,  tier: 3, requireOwned: 5, emoji: '🌟' },
+  { id: 'void_p',      name: 'ריק',         price: 73,  tier: 3, requireOwned: 5, emoji: '⬛' },
+  { id: 'phantom_p',   name: 'פנטום',       price: 78,  tier: 3, requireOwned: 5, emoji: '👻' },
+  { id: 'storm_p',     name: 'סערה',        price: 83,  tier: 3, requireOwned: 5, emoji: '🌪️' },
+  { id: 'blizzard_p',  name: 'בליזארד',     price: 88,  tier: 3, requireOwned: 5, emoji: '🌨️' },
+  { id: 'inferno_p',   name: 'אינפרנו',     price: 93,  tier: 3, requireOwned: 5, emoji: '🔥' },
+  { id: 'vortex',      name: 'מערבולת',     price: 67,  tier: 3, requireOwned: 5, emoji: '🌀' },
+  { id: 'tsunami',     name: 'צונאמי',      price: 72,  tier: 3, requireOwned: 5, emoji: '🌊' },
+  { id: 'volcano_p',   name: 'וולקנו',      price: 77,  tier: 3, requireOwned: 5, emoji: '🌋' },
+  { id: 'earthquake',  name: 'רעידת אדמה', price: 82,  tier: 3, requireOwned: 5, emoji: '💥' },
+  { id: 'hurricane_p', name: 'הוריקן',      price: 87,  tier: 3, requireOwned: 5, emoji: '🌀' },
+  { id: 'typhoon',     name: 'טייפון',      price: 92,  tier: 3, requireOwned: 5, emoji: '💨' },
+  { id: 'cyclone',     name: 'ציקלון',      price: 97,  tier: 3, requireOwned: 5, emoji: '🌪️' },
+  { id: 'supreme',     name: 'סופריים',     price: 120, tier: 4, requireOwned: 8, emoji: '👑' },
+  { id: 'ultimate',    name: 'אולטימטיבי',  price: 200, tier: 4, requireOwned: 8, emoji: '🏆' },
+  { id: 'royale',      name: 'רויאל',       price: 150, tier: 4, requireOwned: 8, emoji: '💎' },
+  { id: 'omega_p',     name: 'אומגה',       price: 160, tier: 4, requireOwned: 8, emoji: '🔱' },
+  { id: 'alpha_p',     name: 'אלפא',        price: 130, tier: 4, requireOwned: 8, emoji: '⚜️' },
+  { id: 'prime_p',     name: 'פריים',       price: 140, tier: 4, requireOwned: 8, emoji: '💠' },
+  { id: 'celestial_p', name: 'שמיימי',      price: 170, tier: 4, requireOwned: 8, emoji: '✨' },
+  { id: 'mythic_p',    name: 'מיתי',        price: 110, tier: 4, requireOwned: 8, emoji: '⚡' },
+  { id: 'eternal_p',   name: 'נצחי',        price: 190, tier: 4, requireOwned: 8, emoji: '♾️' },
+  { id: 'divine',      name: 'אלוהי',       price: 180, tier: 4, requireOwned: 8, emoji: '🌟' },
+  { id: 'ancient',     name: 'עתיק',        price: 115, tier: 4, requireOwned: 8, emoji: '🏛️' },
+  { id: 'sacred',      name: 'קדוש',        price: 145, tier: 4, requireOwned: 8, emoji: '✝️' },
+  { id: 'forbidden',   name: 'אסור',        price: 155, tier: 4, requireOwned: 8, emoji: '🚫' },
+  { id: 'cursed',      name: 'מקולל',       price: 165, tier: 4, requireOwned: 8, emoji: '💀' },
+  { id: 'blessed',     name: 'מבורך',       price: 175, tier: 4, requireOwned: 8, emoji: '🌈' },
+  { id: 'lion_p',      name: 'אריה',        price: 19,  tier: 1, requireOwned: 0, emoji: '🦁' },
+  { id: 'tiger_p',     name: 'נמר',         price: 15,  tier: 1, requireOwned: 0, emoji: '🐯' },
+  { id: 'wolf_p',      name: 'זאב',         price: 17,  tier: 1, requireOwned: 0, emoji: '🐺' },
+  { id: 'bear_p',      name: 'דוב',         price: 11,  tier: 1, requireOwned: 0, emoji: '🐻' },
+  { id: 'eagle_p',     name: 'נשר',         price: 13,  tier: 1, requireOwned: 0, emoji: '🦅' },
+  { id: 'shark_p',     name: 'כריש',        price: 20,  tier: 1, requireOwned: 0, emoji: '🦈' },
+  { id: 'unicorn_p',   name: 'חד קרן',      price: 16,  tier: 1, requireOwned: 0, emoji: '🦄' },
+  { id: 'phoenix_p',   name: 'פניקס',       price: 14,  tier: 1, requireOwned: 0, emoji: '🔥' },
+  { id: 'cherry_p',    name: 'דובדבן',      price: 12,  tier: 1, requireOwned: 0, emoji: '🍒' },
+  { id: 'honey_p',     name: 'דבש',         price: 18,  tier: 1, requireOwned: 0, emoji: '🍯' },
+  { id: 'pirate_p',    name: 'פיראט',       price: 31,  tier: 2, requireOwned: 2, emoji: '🏴‍☠️' },
+  { id: 'ninja_p',     name: 'נינג׳ה',      price: 34,  tier: 2, requireOwned: 2, emoji: '🥷' },
+  { id: 'viking_p',    name: 'ויקינג',      price: 37,  tier: 2, requireOwned: 2, emoji: '🪖' },
+  { id: 'samurai_p',   name: 'סמוראי',      price: 40,  tier: 2, requireOwned: 2, emoji: '🗡️' },
+  { id: 'gladiator_p', name: 'גלדיאטור',    price: 43,  tier: 2, requireOwned: 2, emoji: '🛡️' },
+  { id: 'wizard_p',    name: 'קוסם',        price: 46,  tier: 2, requireOwned: 2, emoji: '🧙' },
+  { id: 'knight_p',    name: 'אביר',        price: 49,  tier: 2, requireOwned: 2, emoji: '⚔️' },
+  { id: 'alchemist_p', name: 'אלכימאי',     price: 32,  tier: 2, requireOwned: 2, emoji: '⚗️' },
+  { id: 'astronaut_p', name: 'אסטרונאוט',   price: 45,  tier: 2, requireOwned: 2, emoji: '👨‍🚀' },
+  { id: 'robot_p',     name: 'רובוט',       price: 39,  tier: 2, requireOwned: 2, emoji: '🤖' },
+  { id: 'cyber_p',     name: 'סייבר',       price: 47,  tier: 2, requireOwned: 2, emoji: '💻' },
+  { id: 'matrix_p',    name: 'מטריקס',      price: 41,  tier: 2, requireOwned: 2, emoji: '🖥️' },
+  { id: 'steampunk_p', name: 'סטימפאנק',    price: 50,  tier: 2, requireOwned: 2, emoji: '⚙️' },
+  { id: 'hologram_p',  name: 'הולוגרם',     price: 33,  tier: 2, requireOwned: 2, emoji: '📡' },
+  { id: 'nanobot_p',   name: 'ננו-בוט',     price: 36,  tier: 2, requireOwned: 2, emoji: '🔬' },
+  { id: 'autumn_p',    name: 'סתיו',        price: 42,  tier: 2, requireOwned: 2, emoji: '🍂' },
+  { id: 'spring_p',    name: 'אביב',        price: 38,  tier: 2, requireOwned: 2, emoji: '🌸' },
+  { id: 'summer_p',    name: 'קיץ',         price: 44,  tier: 2, requireOwned: 2, emoji: '🌞' },
+  { id: 'winter_p',    name: 'חורף',        price: 35,  tier: 2, requireOwned: 2, emoji: '⛄' },
+  { id: 'obsidian_p',  name: 'אובסידיאן',   price: 125, tier: 4, requireOwned: 8, emoji: '⬛' },
+  { id: 'platinum_p',  name: 'פלטינה',      price: 135, tier: 4, requireOwned: 8, emoji: '🤍' },
+  { id: 'onyx_p',      name: 'אוניקס',      price: 185, tier: 4, requireOwned: 8, emoji: '🖤' },
+  { id: 'opal_p',      name: 'אופל',        price: 195, tier: 4, requireOwned: 8, emoji: '💎' },
+  { id: 'diamond_p',   name: 'יהלום',       price: 145, tier: 4, requireOwned: 8, emoji: '💍' },
+  { id: 'void_king_p', name: 'מלך הריק',    price: 155, tier: 4, requireOwned: 8, emoji: '🌑' },
+  { id: 'galactic_p',  name: 'גלקטי',       price: 165, tier: 4, requireOwned: 8, emoji: '🚀' },
+  { id: 'solar_king',  name: 'מלך השמש',    price: 175, tier: 4, requireOwned: 8, emoji: '☀️' },
+  { id: 'thunder_god_p',name: 'אל הברק',    price: 185, tier: 4, requireOwned: 8, emoji: '⚡' },
+  { id: 'ocean_lord_p',name: 'אדון הים',    price: 195, tier: 4, requireOwned: 8, emoji: '🌊' },
+  { id: 'artichoke',   name: 'ארטישוק',    price: 15,  tier: 1, requireOwned: 0, emoji: '🌱' },
+  { id: 'basil',       name: 'בזיליקום',   price: 12,  tier: 1, requireOwned: 0, emoji: '🍃' },
+  { id: 'garlic',      name: 'שום',         price: 10,  tier: 1, requireOwned: 0, emoji: '🧄' },
+  { id: 'caprese',     name: 'קפרזה',       price: 14,  tier: 1, requireOwned: 0, emoji: '🍅' },
+  { id: 'arugula',     name: 'רוקט',        price: 16,  tier: 1, requireOwned: 0, emoji: '🥬' },
+  { id: 'feta',        name: 'פטה',         price: 17,  tier: 1, requireOwned: 0, emoji: '🧀' },
+  { id: 'capers',      name: 'צלפים',       price: 18,  tier: 1, requireOwned: 0, emoji: '🫙' },
+  { id: 'zucchini',    name: 'קישוא',       price: 13,  tier: 1, requireOwned: 0, emoji: '🥒' },
+  { id: 'pepper2',     name: 'פלפל',        price: 11,  tier: 1, requireOwned: 0, emoji: '🫑' },
+  { id: 'corn2',       name: 'תירס',        price: 12,  tier: 1, requireOwned: 0, emoji: '🌽' },
+  { id: 'spinach2',    name: 'תרד',         price: 10,  tier: 1, requireOwned: 0, emoji: '🥬' },
+  { id: 'sun_dried',   name: 'מיובש שמש',  price: 19,  tier: 1, requireOwned: 0, emoji: '☀️' },
+  { id: 'anchovy',     name: 'אנשובי',      price: 20,  tier: 1, requireOwned: 0, emoji: '🐟' },
+  { id: 'tuna2',       name: 'טונה',        price: 15,  tier: 1, requireOwned: 0, emoji: '🐠' },
+  { id: 'sardine',     name: 'סרדין',       price: 16,  tier: 1, requireOwned: 0, emoji: '🐡' },
+  { id: 'onion2',      name: 'בצל',         price: 10,  tier: 1, requireOwned: 0, emoji: '🧅' },
+  { id: 'quattro',     name: 'קוואטרו',     price: 32,  tier: 2, requireOwned: 2, emoji: '4️⃣' },
+  { id: 'napoli',      name: 'נאפולי',      price: 38,  tier: 2, requireOwned: 2, emoji: '🏛️' },
+  { id: 'romano',      name: 'רומנו',       price: 33,  tier: 2, requireOwned: 2, emoji: '🇮🇹' },
+  { id: 'funghi',      name: 'פונגי',       price: 37,  tier: 2, requireOwned: 2, emoji: '🍄' },
+  { id: 'salami2',     name: 'סלמי',        price: 39,  tier: 2, requireOwned: 2, emoji: '🥓' },
+  { id: 'chorizo',     name: 'צ׳וריסו',    price: 44,  tier: 2, requireOwned: 2, emoji: '🌭' },
+  { id: 'pepperoni2',  name: 'פפרוני',      price: 46,  tier: 2, requireOwned: 2, emoji: '🔴' },
+  { id: 'mozzarella',  name: 'מוצרלה',     price: 41,  tier: 2, requireOwned: 2, emoji: '⚪' },
+  { id: 'burrata',     name: 'בוראטה',      price: 48,  tier: 2, requireOwned: 2, emoji: '🫧' },
+  { id: 'gorgonzola',  name: 'גורגונזולה', price: 43,  tier: 2, requireOwned: 2, emoji: '💙' },
+  { id: 'parmesan',    name: 'פרמזן',       price: 45,  tier: 2, requireOwned: 2, emoji: '🟡' },
+  { id: 'tropical',    name: 'טרופי',       price: 38,  tier: 2, requireOwned: 2, emoji: '🌺' },
+  { id: 'mediterranean', name: 'ים תיכוני', price: 42, tier: 2, requireOwned: 2, emoji: '🌊' },
+  { id: 'asian2',      name: 'אסייתי',      price: 36,  tier: 2, requireOwned: 2, emoji: '🍱' },
+  { id: 'american2',   name: 'אמריקאי',    price: 33,  tier: 2, requireOwned: 2, emoji: '🦅' },
+  { id: 'french2',     name: 'צרפתי',       price: 40,  tier: 2, requireOwned: 2, emoji: '🗼' },
+  { id: 'greek2',      name: 'יווני',       price: 37,  tier: 2, requireOwned: 2, emoji: '🏛️' },
+  { id: 'japanese2',   name: 'יפני',        price: 44,  tier: 2, requireOwned: 2, emoji: '🗾' },
+  { id: 'indian2',     name: 'הודי',        price: 39,  tier: 2, requireOwned: 2, emoji: '🇮🇳' },
+  { id: 'thai2',       name: 'תאילנדי',    price: 41,  tier: 2, requireOwned: 2, emoji: '🌶️' },
+  { id: 'mexican2',    name: 'מקסיקני',    price: 35,  tier: 2, requireOwned: 2, emoji: '🌮' },
+  { id: 'korean2',     name: 'קוריאני',    price: 43,  tier: 2, requireOwned: 2, emoji: '🥢' },
+  { id: 'arabic2',     name: 'ערבי',        price: 32,  tier: 2, requireOwned: 2, emoji: '🌙' },
+  { id: 'turkish2',    name: 'טורקי',       price: 36,  tier: 2, requireOwned: 2, emoji: '🕌' },
+  { id: 'moroccan2',   name: 'מרוקאי',     price: 38,  tier: 2, requireOwned: 2, emoji: '🏺' },
+  { id: 'brazilian2',  name: 'ברזילאי',    price: 40,  tier: 2, requireOwned: 2, emoji: '🌿' },
+  { id: 'spring2',     name: 'אביב',        price: 34,  tier: 2, requireOwned: 2, emoji: '🌸' },
+  { id: 'summer2',     name: 'קיץ',         price: 36,  tier: 2, requireOwned: 2, emoji: '🌞' },
+  { id: 'autumn2',     name: 'סתיו',        price: 38,  tier: 2, requireOwned: 2, emoji: '🍂' },
+  { id: 'winter2',     name: 'חורף',        price: 42,  tier: 2, requireOwned: 2, emoji: '❄️' },
+  { id: 'cosmic2',     name: 'קוסמי',       price: 60,  tier: 3, requireOwned: 5, emoji: '🪐' },
+  { id: 'nebula',      name: 'ערפילית',    price: 67,  tier: 3, requireOwned: 5, emoji: '🌌' },
+  { id: 'pulsar',      name: 'פולסר',       price: 72,  tier: 3, requireOwned: 5, emoji: '💫' },
+  { id: 'comet',       name: 'שביט',        price: 64,  tier: 3, requireOwned: 5, emoji: '☄️' },
+  { id: 'supernova',   name: 'סופרנובה',   price: 76,  tier: 3, requireOwned: 5, emoji: '💥' },
+  { id: 'blackhole',   name: 'חור שחור',   price: 85,  tier: 3, requireOwned: 5, emoji: '🕳️' },
+  { id: 'wormhole',    name: 'תולעת חלל',  price: 78,  tier: 3, requireOwned: 5, emoji: '🌀' },
+  { id: 'diamond2',    name: 'יהלום',       price: 82,  tier: 3, requireOwned: 5, emoji: '💎' },
+  { id: 'ruby2',       name: 'רובי',        price: 74,  tier: 3, requireOwned: 5, emoji: '❤️' },
+  { id: 'sapphire',    name: 'ספיר',        price: 76,  tier: 3, requireOwned: 5, emoji: '💙' },
+  { id: 'topaz',       name: 'טופז',        price: 68,  tier: 3, requireOwned: 5, emoji: '💛' },
+  { id: 'amethyst',    name: 'אמטיסט',     price: 70,  tier: 3, requireOwned: 5, emoji: '💜' },
+  { id: 'opal',        name: 'אופל',        price: 72,  tier: 3, requireOwned: 5, emoji: '🔵' },
+  { id: 'jade2',       name: 'ג׳ייד',       price: 66,  tier: 3, requireOwned: 5, emoji: '💚' },
+  { id: 'onyx',        name: 'אוניקס',      price: 80,  tier: 3, requireOwned: 5, emoji: '⬛' },
+  { id: 'pearl2',      name: 'פנינה',       price: 73,  tier: 3, requireOwned: 5, emoji: '🔘' },
+  { id: 'amber2',      name: 'ענבר',        price: 65,  tier: 3, requireOwned: 5, emoji: '🟠' },
+  { id: 'volcano',     name: 'הר געש',     price: 70,  tier: 3, requireOwned: 5, emoji: '🌋' },
+  { id: 'storm',       name: 'סערה',        price: 75,  tier: 3, requireOwned: 5, emoji: '⛈️' },
+  { id: 'blizzard',    name: 'בליזארד',    price: 78,  tier: 3, requireOwned: 5, emoji: '🌨️' },
+  { id: 'monsoon',     name: 'מונסון',      price: 72,  tier: 3, requireOwned: 5, emoji: '🌧️' },
+  { id: 'eclipse',     name: 'ליקוי',       price: 86,  tier: 3, requireOwned: 5, emoji: '🌑' },
+  { id: 'aurora3',     name: 'אורורה',      price: 90,  tier: 3, requireOwned: 5, emoji: '🌠' },
+  { id: 'tornado3',    name: 'טורנדו',      price: 68,  tier: 3, requireOwned: 5, emoji: '🌪️' },
+  { id: 'heatwave',    name: 'גל חום',     price: 62,  tier: 3, requireOwned: 5, emoji: '🔥' },
+  { id: 'frozen',      name: 'קפוא',        price: 77,  tier: 3, requireOwned: 5, emoji: '🧊' },
+  { id: 'electric',    name: 'חשמלי',       price: 83,  tier: 3, requireOwned: 5, emoji: '⚡' },
+  { id: 'radioactive', name: 'רדיואקטיבי', price: 88,  tier: 3, requireOwned: 5, emoji: '☢️' },
+  { id: 'quantum',     name: 'קוונטי',      price: 95,  tier: 3, requireOwned: 5, emoji: '⚛️' },
+  { id: 'antimatter',  name: 'אנטי-חומר',  price: 99,  tier: 3, requireOwned: 5, emoji: '🔮' },
+  { id: 'cosmic_king', name: 'מלך הקוסמוס', price: 130, tier: 4, requireOwned: 8, emoji: '👑' },
+  { id: 'galactic3',   name: 'גלקטי',       price: 140, tier: 4, requireOwned: 8, emoji: '🚀' },
+  { id: 'titan2',      name: 'טיטאן',       price: 155, tier: 4, requireOwned: 8, emoji: '🛡️' },
+  { id: 'omega3',      name: 'אומגה',       price: 180, tier: 4, requireOwned: 8, emoji: '🔱' },
+  { id: 'prime3',      name: 'פריים',       price: 160, tier: 4, requireOwned: 8, emoji: '💠' },
+  { id: 'mythic3',     name: 'מיתי',        price: 170, tier: 4, requireOwned: 8, emoji: '⚜️' },
+  { id: 'eternal3',    name: 'נצחי',        price: 190, tier: 4, requireOwned: 8, emoji: '♾️' },
+  { id: 'infinity2',   name: 'אינסוף',      price: 175, tier: 4, requireOwned: 8, emoji: '∞' },
+  { id: 'genesis',     name: 'בראשית',      price: 165, tier: 4, requireOwned: 8, emoji: '🌅' },
+  { id: 'divinity',    name: 'אלוהי',       price: 200, tier: 4, requireOwned: 8, emoji: '✨' },
+];
+
+const SALAD_SKINS = [
+  { id: 'classic',     name: 'קלאסי',       price: 0,   tier: 0, requireOwned: 0, emoji: '🥗' },
+  { id: 'greek',       name: 'יווני',       price: 10,  tier: 1, requireOwned: 0, emoji: '🧀' },
+  { id: 'caesar',      name: 'קיסר',        price: 12,  tier: 1, requireOwned: 0, emoji: '👑' },
+  { id: 'nicoise',     name: 'ניסואז',      price: 15,  tier: 1, requireOwned: 0, emoji: '🐟' },
+  { id: 'caprese',     name: 'קפרזה',       price: 14,  tier: 1, requireOwned: 0, emoji: '🍅' },
+  { id: 'waldorf',     name: 'וולדורף',     price: 18,  tier: 1, requireOwned: 0, emoji: '🍎' },
+  { id: 'cobb',        name: 'קוב',         price: 16,  tier: 1, requireOwned: 0, emoji: '🥓' },
+  { id: 'tabbouleh',   name: 'טבולה',       price: 11,  tier: 1, requireOwned: 0, emoji: '🌿' },
+  { id: 'fattoush',    name: 'פתוש',        price: 13,  tier: 1, requireOwned: 0, emoji: '🫓' },
+  { id: 'coleslaw',    name: 'קולסלאו',     price: 17,  tier: 1, requireOwned: 0, emoji: '🥬' },
+  { id: 'spinach_s',   name: 'תרד',         price: 19,  tier: 1, requireOwned: 0, emoji: '🥬' },
+  { id: 'arugula',     name: 'רוקט',        price: 20,  tier: 1, requireOwned: 0, emoji: '🌱' },
+  { id: 'kale',        name: 'קייל',        price: 15,  tier: 1, requireOwned: 0, emoji: '🥦' },
+  { id: 'fruit_s',     name: 'פירות',       price: 13,  tier: 1, requireOwned: 0, emoji: '🍓' },
+  { id: 'pasta_s',     name: 'פסטה',        price: 17,  tier: 1, requireOwned: 0, emoji: '🍝' },
+  { id: 'gold_s',      name: 'זהב',         price: 33,  tier: 2, requireOwned: 2, emoji: '👑' },
+  { id: 'ocean_s',     name: 'ים',          price: 37,  tier: 2, requireOwned: 2, emoji: '🐠' },
+  { id: 'forest_s',    name: 'יער',         price: 30,  tier: 2, requireOwned: 2, emoji: '🌳' },
+  { id: 'rainbow_s',   name: 'קשת',         price: 40,  tier: 2, requireOwned: 2, emoji: '🌈' },
+  { id: 'fire_s',      name: 'אש',          price: 44,  tier: 2, requireOwned: 2, emoji: '🔥' },
+  { id: 'crystal_s',   name: 'קריסטל',      price: 48,  tier: 2, requireOwned: 2, emoji: '💎' },
+  { id: 'midnight_s',  name: 'חצות',        price: 35,  tier: 2, requireOwned: 2, emoji: '🌙' },
+  { id: 'sunset_s',    name: 'שקיעה',       price: 42,  tier: 2, requireOwned: 2, emoji: '🌅' },
+  { id: 'emerald_s',   name: 'אמרלד',       price: 38,  tier: 2, requireOwned: 2, emoji: '💚' },
+  { id: 'velvet_s',    name: 'קטיפה',       price: 45,  tier: 2, requireOwned: 2, emoji: '❤️' },
+  { id: 'thunder_s',   name: 'ברק',         price: 50,  tier: 2, requireOwned: 2, emoji: '⚡' },
+  { id: 'marble_s',    name: 'שיש',         price: 32,  tier: 2, requireOwned: 2, emoji: '🗿' },
+  { id: 'neon_s',      name: 'ניאון',       price: 47,  tier: 2, requireOwned: 2, emoji: '✨' },
+  { id: 'cherry_s',    name: 'דובדבן',      price: 31,  tier: 2, requireOwned: 2, emoji: '🍒' },
+  { id: 'blueberry_s', name: 'אוכמניות',    price: 34,  tier: 2, requireOwned: 2, emoji: '🫐' },
+  { id: 'cosmic_s',    name: 'קוסמי',       price: 60,  tier: 3, requireOwned: 5, emoji: '🪐' },
+  { id: 'galaxy_s',    name: 'גלקסיה',      price: 65,  tier: 3, requireOwned: 5, emoji: '🌌' },
+  { id: 'nebula_s',    name: 'ערפילית',     price: 70,  tier: 3, requireOwned: 5, emoji: '⭐' },
+  { id: 'aurora_s',    name: 'אורורה',      price: 75,  tier: 3, requireOwned: 5, emoji: '🌠' },
+  { id: 'shadow_s',    name: 'צל',          price: 80,  tier: 3, requireOwned: 5, emoji: '🌑' },
+  { id: 'void_s',      name: 'ריק',         price: 55,  tier: 3, requireOwned: 5, emoji: '⬛' },
+  { id: 'phantom_s',   name: 'פנטום',       price: 63,  tier: 3, requireOwned: 5, emoji: '👻' },
+  { id: 'storm_s',     name: 'סערה',        price: 68,  tier: 3, requireOwned: 5, emoji: '🌪️' },
+  { id: 'blizzard_s',  name: 'בליזארד',     price: 73,  tier: 3, requireOwned: 5, emoji: '🌨️' },
+  { id: 'inferno_s',   name: 'אינפרנו',     price: 78,  tier: 3, requireOwned: 5, emoji: '🔥' },
+  { id: 'vortex_s',    name: 'מערבולת',     price: 83,  tier: 3, requireOwned: 5, emoji: '🌀' },
+  { id: 'quantum_s',   name: 'קוונטי',      price: 88,  tier: 3, requireOwned: 5, emoji: '⚛️' },
+  { id: 'prism_s',     name: 'פריזמה',      price: 93,  tier: 3, requireOwned: 5, emoji: '🔮' },
+  { id: 'astral_s',    name: 'אסטרלי',      price: 98,  tier: 3, requireOwned: 5, emoji: '🌟' },
+  { id: 'phoenix_s',   name: 'פניקס',       price: 58,  tier: 3, requireOwned: 5, emoji: '🦅' },
+  { id: 'dragon_s',    name: 'דרקון',       price: 66,  tier: 3, requireOwned: 5, emoji: '🐉' },
+  { id: 'unicorn_s',   name: 'חד קרן',      price: 71,  tier: 3, requireOwned: 5, emoji: '🦄' },
+  { id: 'mermaid_s',   name: 'בת ים',       price: 76,  tier: 3, requireOwned: 5, emoji: '🧜' },
+  { id: 'griffin_s',   name: 'גריפין',      price: 81,  tier: 3, requireOwned: 5, emoji: '🦅' },
+  { id: 'hydra_s',     name: 'הידרה',       price: 86,  tier: 3, requireOwned: 5, emoji: '🐍' },
+  { id: 'lion_s',      name: 'אריה',        price: 57,  tier: 3, requireOwned: 5, emoji: '🦁' },
+  { id: 'tiger_s',     name: 'נמר',         price: 62,  tier: 3, requireOwned: 5, emoji: '🐯' },
+  { id: 'wolf_s',      name: 'זאב',         price: 67,  tier: 3, requireOwned: 5, emoji: '🐺' },
+  { id: 'bear_s',      name: 'דוב',         price: 72,  tier: 3, requireOwned: 5, emoji: '🐻' },
+  { id: 'shark_s',     name: 'כריש',        price: 77,  tier: 3, requireOwned: 5, emoji: '🦈' },
+  { id: 'knight_s',    name: 'אביר',        price: 82,  tier: 3, requireOwned: 5, emoji: '⚔️' },
+  { id: 'wizard_s',    name: 'קוסם',        price: 87,  tier: 3, requireOwned: 5, emoji: '🧙' },
+  { id: 'ninja_s',     name: 'נינג׳ה',      price: 92,  tier: 3, requireOwned: 5, emoji: '🥷' },
+  { id: 'samurai_s',   name: 'סמוראי',      price: 97,  tier: 3, requireOwned: 5, emoji: '🗡️' },
+  { id: 'robot_s',     name: 'רובוט',       price: 100, tier: 3, requireOwned: 5, emoji: '🤖' },
+  { id: 'obsidian_s',  name: 'אובסידיאן',   price: 120, tier: 4, requireOwned: 8, emoji: '⬛' },
+  { id: 'platinum_s',  name: 'פלטינה',      price: 140, tier: 4, requireOwned: 8, emoji: '🤍' },
+  { id: 'onyx_s',      name: 'אוניקס',      price: 130, tier: 4, requireOwned: 8, emoji: '🖤' },
+  { id: 'opal_s',      name: 'אופל',        price: 150, tier: 4, requireOwned: 8, emoji: '🌈' },
+  { id: 'diamond_s',   name: 'יהלום',       price: 180, tier: 4, requireOwned: 8, emoji: '💍' },
+  { id: 'void_king_s', name: 'מלך הריק',    price: 200, tier: 4, requireOwned: 8, emoji: '👑' },
+  { id: 'celestial_s', name: 'שמיימי',      price: 175, tier: 4, requireOwned: 8, emoji: '✨' },
+  { id: 'mythic_s',    name: 'מיתי',        price: 110, tier: 4, requireOwned: 8, emoji: '⚜️' },
+  { id: 'eternal_s',   name: 'נצחי',        price: 160, tier: 4, requireOwned: 8, emoji: '♾️' },
+  { id: 'divine_s',    name: 'אלוהי',       price: 170, tier: 4, requireOwned: 8, emoji: '🌟' },
+  { id: 'ancient_s',   name: 'עתיק',        price: 115, tier: 4, requireOwned: 8, emoji: '🏛️' },
+  { id: 'sacred_s',    name: 'קדוש',        price: 145, tier: 4, requireOwned: 8, emoji: '✝️' },
+  { id: 'forbidden_s', name: 'אסור',        price: 155, tier: 4, requireOwned: 8, emoji: '🚫' },
+  { id: 'cursed_s',    name: 'מקולל',       price: 165, tier: 4, requireOwned: 8, emoji: '💀' },
+  { id: 'blessed_s',   name: 'מבורך',       price: 190, tier: 4, requireOwned: 8, emoji: '🌈' },
+  { id: 'omega_s',     name: 'אומגה',       price: 195, tier: 4, requireOwned: 8, emoji: '🔱' },
+  { id: 'alpha_s',     name: 'אלפא',        price: 125, tier: 4, requireOwned: 8, emoji: '🅰️' },
+  { id: 'prime_s',     name: 'פריים',       price: 135, tier: 4, requireOwned: 8, emoji: '💠' },
+  { id: 'supreme_s',   name: 'סופריים',     price: 185, tier: 4, requireOwned: 8, emoji: '🏆' },
+  { id: 'ultimate_s',  name: 'אולטימטיבי',  price: 200, tier: 4, requireOwned: 8, emoji: '⭐' },
+  { id: 'royale_s',    name: 'רויאל',       price: 145, tier: 4, requireOwned: 8, emoji: '🎖️' },
+  { id: 'solar_s',     name: 'סולארי',      price: 135, tier: 4, requireOwned: 8, emoji: '☀️' },
+  { id: 'lunar_s',     name: 'ירחי',        price: 125, tier: 4, requireOwned: 8, emoji: '🌙' },
+  { id: 'galactic_s',  name: 'גלקטי',       price: 165, tier: 4, requireOwned: 8, emoji: '🚀' },
+  { id: 'thunder_god_s',name: 'אל הברק',    price: 190, tier: 4, requireOwned: 8, emoji: '⚡' },
+  { id: 'ocean_lord_s',name: 'אדון הים',    price: 180, tier: 4, requireOwned: 8, emoji: '🌊' },
+  { id: 'frost_king_s',name: 'מלך הקרח',    price: 155, tier: 4, requireOwned: 8, emoji: '🧊' },
+  { id: 'lava_king_s', name: 'מלך הלבה',    price: 170, tier: 4, requireOwned: 8, emoji: '🔥' },
+  { id: 'inferno_kg',  name: 'מלך הבערה',   price: 185, tier: 4, requireOwned: 8, emoji: '💥' },
+  { id: 'storm_king',  name: 'מלך הסערה',   price: 160, tier: 4, requireOwned: 8, emoji: '⛈️' },
+  { id: 'shadow_king', name: 'מלך הצל',     price: 150, tier: 4, requireOwned: 8, emoji: '🌑' },
+  { id: 'wild',        name: 'פראי',        price: 20,  tier: 1, requireOwned: 0, emoji: '🌾' },
+  { id: 'herbal',      name: 'עשבי',        price: 10,  tier: 1, requireOwned: 0, emoji: '🌿' },
+  { id: 'citrus_s',    name: 'הדרים',       price: 12,  tier: 1, requireOwned: 0, emoji: '🍋' },
+  { id: 'spicy_s',     name: 'חריף',        price: 14,  tier: 1, requireOwned: 0, emoji: '🌶️' },
+  { id: 'sweet_s',     name: 'מתוק',        price: 16,  tier: 1, requireOwned: 0, emoji: '🍯' },
+  { id: 'sour_s',      name: 'חמוץ',        price: 18,  tier: 1, requireOwned: 0, emoji: '🍋' },
+  { id: 'bitter_s',    name: 'מר',          price: 11,  tier: 1, requireOwned: 0, emoji: '☕' },
+  { id: 'smoky_s',     name: 'מעושן',       price: 13,  tier: 1, requireOwned: 0, emoji: '💨' },
+  { id: 'tangy_s',     name: 'חמצמץ',       price: 15,  tier: 1, requireOwned: 0, emoji: '🍇' },
+  { id: 'zesty_s',     name: 'נמרץ',        price: 19,  tier: 1, requireOwned: 0, emoji: '⚡' },
 ];
 
 let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
@@ -813,6 +1218,9 @@ let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   ownedPizzaSkins: ['classic'],
   activePizzaSkin: 'classic',
   pizzaPurchaseCount: 0,
+  ownedSaladSkins: ['classic'],
+  activeSaladSkin: 'classic',
+  saladPurchaseCount: 0,
 };
 
 // Apply remote data if loaded before this script ran
@@ -829,6 +1237,10 @@ if (!shopData.burgerPurchaseCount) shopData.burgerPurchaseCount = 0;
 if (!shopData.ownedPizzaSkins) shopData.ownedPizzaSkins = ['classic'];
 if (!shopData.activePizzaSkin) shopData.activePizzaSkin = 'classic';
 if (!shopData.pizzaPurchaseCount) shopData.pizzaPurchaseCount = 0;
+// Migrate old saves that lack salad skin fields
+if (!shopData.ownedSaladSkins) shopData.ownedSaladSkins = ['classic'];
+if (!shopData.activeSaladSkin) shopData.activeSaladSkin = 'classic';
+if (!shopData.saladPurchaseCount) shopData.saladPurchaseCount = 0;
 
 function saveShop() {
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
@@ -1472,9 +1884,11 @@ function openShop() {
   document.getElementById('panel-basket').style.display = '';
   document.getElementById('panel-burger').style.display = 'none';
   document.getElementById('panel-pizza').style.display = 'none';
+  document.getElementById('panel-salad').style.display = 'none';
   document.getElementById('tab-basket').className = 'shop-tab active';
   document.getElementById('tab-burger').className  = 'shop-tab';
   document.getElementById('tab-pizza').className   = 'shop-tab';
+  document.getElementById('tab-salad').className   = 'shop-tab';
   renderShop();
   document.getElementById('shop-overlay').style.display = 'flex';
 }
@@ -1611,11 +2025,14 @@ function switchShopTab(tab) {
   document.getElementById('panel-basket').style.display = tab === 'basket' ? '' : 'none';
   document.getElementById('panel-burger').style.display = tab === 'burger' ? '' : 'none';
   document.getElementById('panel-pizza').style.display  = tab === 'pizza'  ? '' : 'none';
+  document.getElementById('panel-salad').style.display  = tab === 'salad'  ? '' : 'none';
   document.getElementById('tab-basket').className = 'shop-tab' + (tab === 'basket' ? ' active' : '');
   document.getElementById('tab-burger').className = 'shop-tab' + (tab === 'burger' ? ' active' : '');
   document.getElementById('tab-pizza').className  = 'shop-tab' + (tab === 'pizza'  ? ' active' : '');
+  document.getElementById('tab-salad').className  = 'shop-tab' + (tab === 'salad'  ? ' active' : '');
   if (tab === 'burger') renderBurgerShop();
   if (tab === 'pizza')  renderPizzaShop();
+  if (tab === 'salad')  renderSaladShop();
 }
 
 function renderBurgerShop() {
@@ -1818,6 +2235,74 @@ function equipPizzaSkin(skinId) {
   shopData.activePizzaSkin = skinId;
   saveShop();
   renderPizzaShop();
+}
+
+// ── Salad Shop Logic ──────────────────────────────────────────────────────────
+function renderSaladShop() {
+  const owned = shopData.ownedSaladSkins.length;
+  document.getElementById('salad-owned-count').textContent = owned;
+  const grid = document.getElementById('salad-skin-grid');
+  grid.innerHTML = '';
+
+  SALAD_SKINS.forEach(skin => {
+    const isOwned  = shopData.ownedSaladSkins.includes(skin.id);
+    const isActive = shopData.activeSaladSkin === skin.id;
+    const isLocked = owned < skin.requireOwned;
+    const canAfford = shopData.coins >= skin.price;
+
+    let cardClass = 'skin-card';
+    if (isActive) cardClass += ' active';
+    else if (isOwned) cardClass += ' owned';
+    else if (isLocked) cardClass += ' locked';
+
+    const tierColor = TIER_COLORS[skin.tier];
+    const tierLabel = TIER_STARS[skin.tier] ? TIER_STARS[skin.tier] + ' ' : '';
+
+    let btnHtml;
+    if (isActive) {
+      btnHtml = `<button class="skin-btn btn-active" disabled>✓ פעיל</button>`;
+    } else if (isOwned) {
+      btnHtml = `<button class="skin-btn btn-equip" onclick="equipSaladSkin('${skin.id}')">לבש</button>`;
+    } else if (isLocked) {
+      btnHtml = `<button class="skin-btn btn-locked" disabled>🔒 צריך ${skin.requireOwned}</button>`;
+    } else {
+      btnHtml = `<button class="skin-btn btn-buy" onclick="buySaladSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
+    }
+
+    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
+
+    grid.innerHTML += `
+      <div class="${cardClass}">
+        <div class="skin-preview" id="slpreview-${skin.id}" style="width:88px;height:52px;display:flex;align-items:center;justify-content:center;font-size:2rem;">${isOwned || skin.price === 0 ? skin.emoji : '🔒'}</div>
+        <div class="skin-tier-badge" style="background:${tierColor}">${tierLabel}${TIER_LABELS[skin.tier]}</div>
+        <div class="skin-name">${skin.emoji} ${skin.name}</div>
+        ${priceInfo}
+        ${btnHtml}
+      </div>`;
+  });
+}
+
+function buySaladSkin(skinId) {
+  const skin = SALAD_SKINS.find(s => s.id === skinId);
+  if (!skin || shopData.ownedSaladSkins.includes(skinId)) return;
+  if (shopData.coins < skin.price) return;
+  if (shopData.ownedSaladSkins.length < skin.requireOwned) return;
+
+  shopData.coins -= skin.price;
+  shopData.ownedSaladSkins.push(skinId);
+  shopData.activeSaladSkin = skinId;
+  saveShop();
+  coinsEl.textContent = shopData.coins;
+
+  document.getElementById('shop-coins-val').textContent = shopData.coins;
+  renderSaladShop();
+  showToast(`🎉 קנית את סקין הסלט "${skin.name}"!`);
+}
+
+function equipSaladSkin(skinId) {
+  shopData.activeSaladSkin = skinId;
+  saveShop();
+  renderSaladShop();
 }
 
 // ── Clouds ───────────────────────────────────────────────────────────────────
@@ -2741,6 +3226,25 @@ function spawnPizza() {
   });
 }
 
+// ── Salad spawn ───────────────────────────────────────────────────────────────
+function spawnSalad() {
+  const size = 30 + Math.random() * 14;
+  const speed = (1.1 + level * 0.3) * (0.85 + Math.random() * 0.3);
+  salads.push({ x: size + Math.random() * (W - size * 2), y: -size, size, speed, wobble: Math.random() * Math.PI * 2, wobbleSpeed: 0.03 + Math.random() * 0.02, spin: Math.random() * Math.PI * 2, spinSpeed: (Math.random() - 0.5) * 0.08 });
+}
+
+// ── Salad drawing ─────────────────────────────────────────────────────────────
+function drawSalad(c, x, y, size, skinId) {
+  const skin = SALAD_SKINS.find(s => s.id === skinId) || SALAD_SKINS[0];
+  const emoji = skin.emoji;
+  c.save();
+  c.font = `${size * 1.2}px serif`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText(emoji, x, y);
+  c.restore();
+}
+
 // ── Pizza drawing ─────────────────────────────────────────────────────────────
 function drawPizza(c, x, y, size, skinId) {
   const s = size / 40;
@@ -3320,6 +3824,13 @@ function update() {
     pizzaSpawnInterval = Math.max(80, 210 - (level - 1) * 15);
   }
 
+  saladSpawnTimer++;
+  if (saladSpawnTimer >= saladSpawnInterval) {
+    spawnSalad();
+    saladSpawnTimer = 0;
+    saladSpawnInterval = Math.max(90, 180 - (level - 1) * 12);
+  }
+
   burgers = burgers.filter(b => {
     b.wobble += b.wobbleSpeed;
     b.x += Math.sin(b.wobble) * 0.8;
@@ -3370,6 +3881,32 @@ function update() {
     }
     return true;
   });
+
+  salads = salads.filter(s => {
+    s.wobble += s.wobbleSpeed;
+    s.x += Math.sin(s.wobble) * 0.6;
+    s.y += s.speed;
+    s.spin += s.spinSpeed;
+
+    if (s.y + s.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
+      if (Math.abs(s.x - basketX) < BASKET_W / 2 + s.size * 0.3) {
+        score += 3;
+        scoreEl.textContent = score;
+        addCoins(3);
+        spawnParticles(s.x, BASKET_Y - BASKET_H / 2);
+        spawnFloatingText(s.x, BASKET_Y - BASKET_H / 2 - 20, '🥗 סלט! +3');
+        checkLevel();
+        return false;
+      } else if (s.y - s.size > H) {
+        missCount++;
+        lives--;
+        livesEl.textContent = lives;
+        if (lives <= 0) { gameOver(); return false; }
+        return false;
+      }
+    }
+    return true;
+  });
 }
 
 function drawBackground() {
@@ -3408,6 +3945,13 @@ function draw() {
     ctx.translate(p.x, p.y);
     ctx.rotate(p.spin);
     drawPizza(ctx, 0, 0, p.size, shopData.activePizzaSkin);
+    ctx.restore();
+  });
+  salads.forEach(s => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.spin);
+    drawSalad(ctx, 0, 0, s.size, shopData.activeSaladSkin);
     ctx.restore();
   });
   drawBasket();
@@ -3477,8 +4021,9 @@ window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
   pizzaSpawnTimer = 0; pizzaSpawnInterval = 210;
+  saladSpawnTimer = 0; saladSpawnInterval = 180;
   paused = false;
-  burgers = []; pizzas = []; particles = []; floatingTexts = [];
+  burgers = []; pizzas = []; salads = []; particles = []; floatingTexts = [];
   basketX = W / 2;
   pauseBtn.textContent = '⏸ השהה';
   pauseBtn.style.display = 'block';
