@@ -4085,7 +4085,8 @@ function update() {
         scoreEl.textContent = score;
         addCoins(3);
         spawnParticles(s.x, BASKET_Y - BASKET_H / 2);
-        spawnFloatingText(s.x, BASKET_Y - BASKET_H / 2 - 20, '🥗 סלט! +3');
+        const activeSaladSkinData = SALAD_SKINS.find(sk => sk.id === shopData.activeSaladSkin) || SALAD_SKINS[0];
+        spawnFloatingText(s.x, BASKET_Y - BASKET_H / 2 - 20, `${activeSaladSkinData.emoji} ${activeSaladSkinData.name}! +3`);
         checkLevel();
         return false;
       } else if (s.y - s.size > H) {
