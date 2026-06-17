@@ -4636,7 +4636,7 @@ function drawBurger(c, x, y, size, highlight, skinId) {
       break;
     }
 
-    default: { // classic
+    default: { // classic or any skin without a custom case
       if (highlight) { c.shadowColor = '#ffe066'; c.shadowBlur = 18; }
       c.fillStyle = '#e8a020';
       c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
@@ -4652,6 +4652,15 @@ function drawBurger(c, x, y, size, highlight, skinId) {
       c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
       c.fillStyle = '#e8a020';
       c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
+      if (skinId !== 'classic') {
+        const burgerSkin = BURGER_SKINS.find(sk => sk.id === skinId);
+        if (burgerSkin) {
+          c.font = `${Math.round(18*s)}px Arial`;
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText(burgerSkin.emoji, 0, -2*s);
+        }
+      }
     }
   }
 
