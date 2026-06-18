@@ -3580,6 +3580,11 @@ function drawBurgerSkinPreviews() {
       pctx.font = 'bold 18px Arial';
       pctx.textAlign = 'center';
       pctx.fillText('🔒', pw / 2, ph / 2 + 7);
+    } else if (skin.id.includes('_b')) {
+      pctx.font = `bold ${Math.floor(ph * 0.62)}px Arial`;
+      pctx.textAlign = 'center';
+      pctx.textBaseline = 'middle';
+      pctx.fillText(skin.emoji, pw / 2, ph / 2);
     } else {
       drawBurger(pctx, pw / 2, ph * 0.55, 28, false, skin.id);
     }
