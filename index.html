@@ -864,7 +864,6 @@ const BURGER_SKINS = [
   { id: 'gold',       name: 'זהב',      price: 35,  tier: 2, requireOwned: 2, emoji: '👑' },
   { id: 'ocean',      name: 'ים',       price: 45,  tier: 2, requireOwned: 2, emoji: '🐟' },
   { id: 'lava',       name: 'לבה',      price: 40,  tier: 2, requireOwned: 2, emoji: '🌋' },
-  { id: 'bbq',        name: 'בי-בי-קיו', price: 42, tier: 2, requireOwned: 2, emoji: '🍖' },
   { id: 'candy',      name: 'ממתק',     price: 55,  tier: 3, requireOwned: 4, emoji: '🍭' },
   { id: 'galaxy',     name: 'גלקסיה',  price: 60,  tier: 3, requireOwned: 4, emoji: '🌌' },
   { id: 'rainbow',    name: 'קשת',      price: 68,  tier: 3, requireOwned: 4, emoji: '🌈' },
@@ -890,8 +889,6 @@ const BURGER_SKINS = [
   { id: 'magma',      name: 'מגמה',     price: 68,  tier: 3, requireOwned: 5, emoji: '🔥' },
   // 100 new burger skins
   // Tier 1
-  { id: 'cheese_b',    name: 'גבינה',       price: 10,  tier: 1, requireOwned: 0, emoji: '🧀' },
-  { id: 'bacon_b',     name: 'בייקון',      price: 12,  tier: 1, requireOwned: 0, emoji: '🥓' },
   { id: 'egg_b',       name: 'ביצה',        price: 11,  tier: 1, requireOwned: 0, emoji: '🍳' },
   { id: 'onion_b',     name: 'בצל',         price: 9,   tier: 1, requireOwned: 0, emoji: '🧅' },
   { id: 'mushroom_b',  name: 'פטרייה',      price: 13,  tier: 1, requireOwned: 0, emoji: '🍄' },
@@ -1107,7 +1104,6 @@ const SALAD_SKINS = [
   { id: 'caesar',      name: 'קיסר',        price: 12,  tier: 1, requireOwned: 0, emoji: '👑' },
   { id: 'caprese',     name: 'קפרזה',       price: 14,  tier: 1, requireOwned: 0, emoji: '🍅' },
   { id: 'waldorf',     name: 'וולדורף',     price: 18,  tier: 1, requireOwned: 0, emoji: '🍎' },
-  { id: 'cobb',        name: 'קוב',         price: 16,  tier: 1, requireOwned: 0, emoji: '🥓' },
   { id: 'tabbouleh',   name: 'טבולה',       price: 11,  tier: 1, requireOwned: 0, emoji: '🌿' },
   { id: 'fattoush',    name: 'פתוש',        price: 13,  tier: 1, requireOwned: 0, emoji: '🫓' },
   { id: 'coleslaw',    name: 'קולסלאו',     price: 17,  tier: 1, requireOwned: 0, emoji: '🥬' },
@@ -4129,28 +4125,6 @@ function drawBurger(c, x, y, size, highlight, skinId) {
       break;
     }
 
-    case 'bbq': {
-      if (highlight) { c.shadowColor = '#ff6600'; c.shadowBlur = 22; }
-      c.shadowColor = '#ff4400'; c.shadowBlur = 10;
-      c.fillStyle = '#5c2a0a';
-      c.beginPath(); c.ellipse(0, -18*s, 20*s, 12*s, 0, Math.PI, 0); c.fill();
-      c.fillStyle = '#ff6600';
-      [[-8*s,-22*s],[0,-24*s],[8*s,-22*s]].forEach(([sx,sy]) => {
-        c.beginPath(); c.ellipse(sx, sy, 2.5*s, 1.5*s, 0.3, 0, Math.PI*2); c.fill();
-      });
-      c.fillStyle = '#8b1a00';
-      c.beginPath(); c.ellipse(0, -8*s, 22*s, 6*s, 0, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#2a0d00';
-      c.beginPath(); c.ellipse(0, -2*s, 20*s, 5*s, 0, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#e67e00';
-      c.beginPath(); c.ellipse(0, 4*s, 22*s, 4*s, 0, 0, Math.PI*2); c.fill();
-      c.shadowColor = '#ff4400'; c.shadowBlur = 12;
-      c.fillStyle = '#5c2a0a';
-      c.beginPath(); c.ellipse(0, 10*s, 21*s, 8*s, 0, 0, Math.PI*2); c.fill();
-      c.shadowBlur = 0;
-      break;
-    }
-
     case 'rainbow': {
       if (highlight) { c.shadowColor = '#ffffff'; c.shadowBlur = 20; }
       const rg = c.createLinearGradient(-20*s, 0, 20*s, 0);
@@ -4822,17 +4796,6 @@ function drawPizza(c, x, y, size, skinId) {
         c.moveTo(0, -4 * s); c.quadraticCurveTo(3 * s, 0, 0, 4 * s);
         c.strokeStyle = '#ff6600'; c.lineWidth = 2 * s; c.stroke();
         c.restore();
-      });
-      break;
-    }
-    case 'bbq': {
-      c.fillStyle = '#3d1a00';
-      sliceShape(c); c.fill();
-      drawSauce(c, '#5a2500');
-      drawCheese(c, '#c8830a');
-      c.fillStyle = '#6b3300';
-      [[-5 * s, 0], [5 * s, -2 * s], [0, 6 * s]].forEach(([px, py]) => {
-        c.beginPath(); c.ellipse(px, py, 4 * s, 2 * s, 0.2, 0, Math.PI * 2); c.fill();
       });
       break;
     }
