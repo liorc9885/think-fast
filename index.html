@@ -3655,7 +3655,7 @@ function renderPizzaShop() {
       btnHtml = `<button class="skin-btn btn-buy" onclick="buyPizzaSkin('${skin.id}')" ${canAfford ? '' : 'disabled style="opacity:0.45"'}>🪙 ${skin.price}</button>`;
     }
 
-    const priceInfo = isOwned ? '' : `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>`;
+    const priceInfo = isLocked ? `<div style="font-size:0.7rem;color:rgba(255,255,255,0.45);margin-bottom:2px;">🪙 ${skin.price}</div>` : '';
 
     grid.innerHTML += `
       <div class="${cardClass}">
@@ -4741,8 +4741,7 @@ function drawPizza(c, x, y, size, skinId) {
   }
 
   switch (skinId) {
-    case 'classic':
-    default: {
+    case 'classic': {
       c.fillStyle = '#d4874a';
       sliceShape(c); c.fill();
       drawSauce(c, '#cc2200');
@@ -5235,6 +5234,20 @@ function drawPizza(c, x, y, size, skinId) {
         c.restore();
       });
       c.shadowBlur = 0;
+      break;
+    }
+    default: {
+      c.fillStyle = '#d4874a';
+      sliceShape(c); c.fill();
+      drawSauce(c, '#cc2200');
+      drawCheese(c, '#ffdd55');
+      const skinDef = PIZZA_SKINS.find(sk => sk.id === skinId);
+      if (skinDef && skinDef.emoji) {
+        c.font = `bold ${Math.round(20 * s)}px Arial`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(skinDef.emoji, 0, 1 * s);
+      }
       break;
     }
   }
