@@ -541,110 +541,121 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-const SUPABASE_URL = 'https://dhtjnpdwvuwgzdymfkra.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodGpucGR3dnV3Z3pkeW1ma3JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTAyNzksImV4cCI6MjA5NzA2NjI3OX0.xhC4aa_9v8AzhZoyOIFal1CP-wWUYVPlV9-mGzZJURM';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+// ── API client ────────────────────────────────────────────────────────────────
+// The game no longer talks to Supabase directly (no hardcoded URL/anon key).
+// It calls the trusted Think-Fast API over HTTPS with an X-Player-Id header.
+// API_BASE is '' for the web build (same origin); the Capacitor app can set
+// window.THINKFAST_API_BASE to the deployed origin before this script runs.
+const API_BASE = (window.THINKFAST_API_BASE || '').replace(/\/$/, '');
+const API_CLIENT = window.THINKFAST_CLIENT || 'web';
 
 function getPlayerId() {
   let id = localStorage.getItem('thinkFastPlayerId');
   if (!id) {
     id = crypto.randomUUID();
     localStorage.setItem('thinkFastPlayerId', id);
-    console.log('[Supabase] נוצר player_id חדש:', id);
+    console.log('[API] נוצר player_id חדש:', id);
   }
   return id;
 }
 
-async function loadFromSupabase() {
-  const playerId = getPlayerId();
-  console.log('[Supabase] טוען נתונים עבור player_id:', playerId);
-  const { data, error } = await supabase
-    .from('player_progress')
-    .select('*')
-    .eq('player_id', playerId)
-    .single();
+function apiHeaders() {
+  return { 'Content-Type': 'application/json', 'X-Player-Id': getPlayerId() };
+}
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      console.log('[Supabase] לא נמצא רשומה — שחקן חדש, מתחיל עם ברירות מחדל');
-    } else {
-      console.error('[Supabase] שגיאה בטעינה:', error.code, error.message, error.details);
+// GET /api/v1/progress → returns the camelCase progress object, or null on error.
+async function apiGetProgress() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/progress`, {
+      method: 'GET',
+      headers: apiHeaders(),
+    });
+    if (!res.ok) {
+      console.error('[API] שגיאה בטעינה:', res.status);
+      return null;
     }
+    const json = await res.json();
+    console.log('[API] נטענו נתונים בהצלחה:', json);
+    return json.progress || null;
+  } catch (e) {
+    console.error('[API] טעינה נכשלה (offline?):', e);
     return null;
   }
-
-  console.log('[Supabase] נטענו נתונים בהצלחה:', data);
-  return {
-    coins: data.coins,
-    ownedSkins: data.owned_skins,
-    activeSkin: data.active_skin,
-    purchaseCount: data.purchase_count,
-    ownedBurgerSkins: data.owned_burger_skins,
-    activeBurgerSkin: data.active_burger_skin,
-    burgerPurchaseCount: data.burger_purchase_count,
-    ownedPizzaSkins: data.owned_pizza_skins,
-    activePizzaSkin: data.active_pizza_skin,
-    pizzaPurchaseCount: data.pizza_purchase_count,
-    ownedSaladSkins: data.owned_salad_skins,
-    activeSaladSkin: data.active_salad_skin,
-    saladPurchaseCount: data.salad_purchase_count,
-  };
 }
 
-async function saveToSupabase(shopData) {
-  const playerId = getPlayerId();
+// PUT /api/v1/progress → upsert progress. The server validates and sets updated_at.
+async function apiSaveProgress(shopData) {
   const payload = {
-    player_id: playerId,
     coins: shopData.coins,
-    owned_skins: shopData.ownedSkins,
-    active_skin: shopData.activeSkin,
-    purchase_count: shopData.purchaseCount,
-    owned_burger_skins: shopData.ownedBurgerSkins,
-    active_burger_skin: shopData.activeBurgerSkin,
-    burger_purchase_count: shopData.burgerPurchaseCount,
-    owned_pizza_skins: shopData.ownedPizzaSkins,
-    active_pizza_skin: shopData.activePizzaSkin,
-    pizza_purchase_count: shopData.pizzaPurchaseCount,
-    owned_salad_skins: shopData.ownedSaladSkins,
-    active_salad_skin: shopData.activeSaladSkin,
-    salad_purchase_count: shopData.saladPurchaseCount,
-    updated_at: new Date().toISOString(),
+    ownedSkins: shopData.ownedSkins,
+    activeSkin: shopData.activeSkin,
+    purchaseCount: shopData.purchaseCount,
+    ownedBurgerSkins: shopData.ownedBurgerSkins,
+    activeBurgerSkin: shopData.activeBurgerSkin,
+    burgerPurchaseCount: shopData.burgerPurchaseCount,
+    ownedPizzaSkins: shopData.ownedPizzaSkins,
+    activePizzaSkin: shopData.activePizzaSkin,
+    pizzaPurchaseCount: shopData.pizzaPurchaseCount,
+    ownedSaladSkins: shopData.ownedSaladSkins,
+    activeSaladSkin: shopData.activeSaladSkin,
+    saladPurchaseCount: shopData.saladPurchaseCount,
   };
-
-  console.log('[Supabase] שומר נתונים:', payload);
-
-  const { data, error } = await supabase
-    .from('player_progress')
-    .upsert(payload, { onConflict: 'player_id' });
-
-  if (error) {
-    console.error('[Supabase] שגיאה בשמירה:', error.code, error.message, error.details, error.hint);
-  } else {
-    console.log('[Supabase] נשמר בהצלחה', data);
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/progress`, {
+      method: 'PUT',
+      headers: apiHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error('[API] שגיאה בשמירה:', res.status);
+    } else {
+      console.log('[API] נשמר בהצלחה');
+    }
+  } catch (e) {
+    console.error('[API] שמירה נכשלה (offline?):', e);
   }
 }
 
-window._supabaseSave = saveToSupabase;
-window._supabaseLoad = loadFromSupabase;
-window._supabaseReady = false;
+// POST /api/v1/sessions → record a completed game (activity tracking).
+async function apiPostSession(stats) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/sessions`, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ ...stats, client: API_CLIENT }),
+    });
+    if (!res.ok) {
+      console.error('[API] שגיאה ברישום משחק:', res.status);
+      return null;
+    }
+    return await res.json();
+  } catch (e) {
+    console.error('[API] רישום משחק נכשל (offline?):', e);
+    return null;
+  }
+}
 
-loadFromSupabase().then(remote => {
+window._apiSaveProgress = apiSaveProgress;
+window._apiPostSession = apiPostSession;
+window._apiReady = false;
+
+// Load-on-start + the local-vs-remote "higher coins wins" merge (kept client-side
+// against GET /progress, as before). localStorage stays as the offline cache.
+apiGetProgress().then(remote => {
   if (remote) {
     const local = JSON.parse(localStorage.getItem('thinkFastShop') || 'null');
     if (!local || remote.coins >= local.coins) {
-      console.log('[Supabase] משתמש בנתוני ענן (מטבעות:', remote.coins, ')');
+      console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
       Object.assign(window._pendingShopData || {}, remote);
       window._remoteShopData = remote;
     } else {
-      console.log('[Supabase] נתונים מקומיים חדשים יותר (מטבעות מקומיים:', local.coins, 'ענן:', remote.coins, ') — שומר מקומיים לענן');
-      saveToSupabase(local);
+      console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
+      apiSaveProgress(local);
     }
   }
-  window._supabaseReady = true;
-  console.log('[Supabase] אתחול הושלם');
+  window._apiReady = true;
+  console.log('[API] אתחול הושלם');
 });
 </script>
 
@@ -661,6 +672,9 @@ const overlay = document.getElementById('overlay');
 
 // ── State ────────────────────────────────────────────────────────────────────
 let score = 0, lives = 3, level = 1, missCount = 0;
+// Per-run session counters (recorded to the API on game over).
+let burgersCaught = 0, pizzasCaught = 0, saladsCaught = 0;
+let coinsEarnedThisRun = 0, runStartTime = 0;
 let running = false, paused = false, animId = null;
 let burgers = [], pizzas = [], salads = [], particles = [], clouds = [], floatingTexts = [];
 let spawnTimer = 0, spawnInterval = 90;
@@ -1396,16 +1410,19 @@ if (!shopData.activeSaladSkin) shopData.activeSaladSkin = 'classic';
 if (!shopData.saladPurchaseCount) shopData.saladPurchaseCount = 0;
 
 function saveShop() {
+  // localStorage stays as the offline cache so the game still plays if the API
+  // is down; the API is the source of truth when reachable.
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
-  if (window._supabaseSave) {
-    window._supabaseSave(shopData);
+  if (window._apiSaveProgress) {
+    window._apiSaveProgress(shopData);
   } else {
-    console.warn('[Shop] Supabase לא מוכן עדיין — נשמר רק ב-localStorage');
+    console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
   }
 }
 
 function addCoins(n) {
   shopData.coins += n;
+  coinsEarnedThisRun += n;
   coinsEl.textContent = shopData.coins;
   saveShop();
 }
@@ -5302,6 +5319,7 @@ function update() {
     if (b.y + b.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(b.x - basketX) < BASKET_W / 2 + b.size * 0.3) {
         score++;
+        burgersCaught++;
         scoreEl.textContent = score;
         addCoins(1);
         spawnParticles(b.x, BASKET_Y - BASKET_H / 2);
@@ -5328,6 +5346,7 @@ function update() {
     if (p.y + p.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(p.x - basketX) < BASKET_W / 2 + p.size * 0.3) {
         score += 2;
+        pizzasCaught++;
         scoreEl.textContent = score;
         addCoins(2);
         spawnParticles(p.x, BASKET_Y - BASKET_H / 2);
@@ -5354,6 +5373,7 @@ function update() {
     if (s.y + s.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(s.x - basketX) < BASKET_W / 2 + s.size * 0.3) {
         score += 3;
+        saladsCaught++;
         scoreEl.textContent = score;
         addCoins(3);
         spawnParticles(s.x, BASKET_Y - BASKET_H / 2);
@@ -5471,6 +5491,22 @@ function gameOver() {
   cancelAnimationFrame(animId);
   pauseBtn.style.display = 'none';
   pauseBtn.textContent = '⏸ השהה';
+
+  // Record the completed run as an activity session (best-effort; the game
+  // continues normally even if the API is unreachable).
+  if (window._apiPostSession) {
+    window._apiPostSession({
+      score,
+      levelReached: level,
+      coinsEarned: coinsEarnedThisRun,
+      burgersCaught,
+      pizzasCaught,
+      saladsCaught,
+      itemsMissed: missCount,
+      durationMs: runStartTime ? Date.now() - runStartTime : 0,
+    });
+  }
+
   showOverlay(`
     <div id="message-box">
       <h2>💀 המשחק נגמר!</h2>
@@ -5482,6 +5518,8 @@ function gameOver() {
 
 window.startGame = function() {
   score = 0; lives = 3; level = 1; missCount = 0;
+  burgersCaught = 0; pizzasCaught = 0; saladsCaught = 0;
+  coinsEarnedThisRun = 0; runStartTime = Date.now();
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
   pizzaSpawnTimer = 0; pizzaSpawnInterval = 210;
   saladSpawnTimer = 0; saladSpawnInterval = 180;
