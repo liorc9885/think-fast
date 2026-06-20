@@ -12,7 +12,11 @@ export function getPlayerId(req: Request): string | null {
 }
 
 // ── Progress (player_progress row) ────────────────────────────────────────────
-const skinList = z.array(z.string().max(64)).max(200);
+// The cap must stay comfortably above the number of skins the game actually
+// ships (currently ~250 salads and growing). A player who owns every skin must
+// still be able to save; too low a cap rejects their whole payload with 422 and
+// silently strands progress in localStorage.
+const skinList = z.array(z.string().max(64)).max(2000);
 
 export const progressSchema = z.object({
   coins: z.number().int().min(0).max(1_000_000_000),
