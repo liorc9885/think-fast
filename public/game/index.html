@@ -585,7 +585,9 @@ async function apiGetProgress() {
 }
 
 // PUT /api/v1/progress → upsert progress. The server validates and sets updated_at.
-async function apiSaveProgress(shopData) {
+// Pass { keepalive: true } when saving during page exit so the browser doesn't
+// cancel the request mid-flight.
+async function apiSaveProgress(shopData, opts = {}) {
   const payload = {
     coins: shopData.coins,
     ownedSkins: shopData.ownedSkins,
@@ -606,6 +608,7 @@ async function apiSaveProgress(shopData) {
       method: 'PUT',
       headers: apiHeaders(),
       body: JSON.stringify(payload),
+      keepalive: opts.keepalive === true,
     });
     if (!res.ok) {
       console.error('[API] שגיאה בשמירה:', res.status);
@@ -618,12 +621,14 @@ async function apiSaveProgress(shopData) {
 }
 
 // POST /api/v1/sessions → record a completed game (activity tracking).
-async function apiPostSession(stats) {
+// Pass { keepalive: true } when recording during page exit.
+async function apiPostSession(stats, opts = {}) {
   try {
     const res = await fetch(`${API_BASE}/api/v1/sessions`, {
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify({ ...stats, client: API_CLIENT }),
+      keepalive: opts.keepalive === true,
     });
     if (!res.ok) {
       console.error('[API] שגיאה ברישום משחק:', res.status);
@@ -5539,6 +5544,50 @@ window.startGame = function() {
   running = true;
   loop();
 };
+
+// ── Save-on-exit ──────────────────────────────────────────────────────────────
+// When the player leaves (closes the tab, switches app, navigates away), flush
+// everything to Supabase before the page is torn down. `keepalive` keeps the
+// requests alive through unload; running this only once avoids duplicate writes.
+let _exitFlushed = false;
+function flushOnExit() {
+  if (_exitFlushed) return;
+  _exitFlushed = true;
+
+  // 1. Persist the latest progress (coins + all skins).
+  localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  if (window._apiSaveProgress) {
+    window._apiSaveProgress(shopData, { keepalive: true });
+  }
+
+  // 2. If a game is mid-run (no Game Over yet), record it as a session so the
+  //    run isn't lost. Game Over already posts its own session and sets
+  //    running=false, so this won't double-count finished games.
+  if (running && window._apiPostSession) {
+    window._apiPostSession({
+      score,
+      levelReached: level,
+      coinsEarned: coinsEarnedThisRun,
+      burgersCaught,
+      pizzasCaught,
+      saladsCaught,
+      itemsMissed: missCount,
+      durationMs: runStartTime ? Date.now() - runStartTime : 0,
+    }, { keepalive: true });
+  }
+}
+
+// `visibilitychange → hidden` is the most reliable exit signal on mobile (app
+// switch / tab close); `pagehide` covers desktop navigation and bfcache.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushOnExit();
+  } else {
+    // Returned to the game — re-arm so the next exit flushes again.
+    _exitFlushed = false;
+  }
+});
+window.addEventListener('pagehide', flushOnExit);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 coinsEl.textContent = shopData.coins;
