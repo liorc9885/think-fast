@@ -7,9 +7,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cap:sync": "cap sync",
+    "cap:android": "cap sync android && cap open android",
+    "cap:run:android": "cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@supabase/supabase-js": "^2.45.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
