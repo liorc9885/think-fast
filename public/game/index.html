@@ -652,8 +652,18 @@ apiGetProgress().then(remote => {
     const local = JSON.parse(localStorage.getItem('thinkFastShop') || 'null');
     if (!local || remote.coins >= local.coins) {
       console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
-      Object.assign(window._pendingShopData || {}, remote);
       window._remoteShopData = remote;
+      // If shopData is already initialized (API responded after shop script ran),
+      // apply the remote data now and refresh the UI so Supabase changes take effect.
+      if (typeof shopData !== 'undefined') {
+        Object.assign(shopData, remote);
+        localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+        const coinsDisp = document.getElementById('coins-display');
+        if (coinsDisp) coinsDisp.textContent = shopData.coins;
+        const shopCoins = document.getElementById('shop-coins-val');
+        if (shopCoins) shopCoins.textContent = shopData.coins;
+        console.log('[API] shopData עודכן בזמן אמת מהשרת');
+      }
     } else {
       console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
       apiSaveProgress(local);
