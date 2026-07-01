@@ -390,6 +390,14 @@
     }
     #leaderboard-close-btn:hover { background: rgba(255,255,255,0.25); }
 
+    #leaderboard-player-count {
+      display: none;
+      margin: 10px 20px 0;
+      font-size: 0.78rem;
+      color: #7ee787;
+      text-align: center;
+    }
+
     #leaderboard-name-form {
       display: flex;
       align-items: center;
@@ -399,6 +407,15 @@
       border: 1px solid rgba(255,215,0,0.2);
       border-radius: 14px;
       padding: 10px 14px;
+    }
+    #leaderboard-name-form.leaderboard-name-highlight {
+      border-color: #ffd700;
+      box-shadow: 0 0 0 3px rgba(255,215,0,0.25);
+      animation: leaderboard-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes leaderboard-pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(255,215,0,0.25); }
+      50% { box-shadow: 0 0 0 6px rgba(255,215,0,0.05); }
     }
 
     #leaderboard-name-form label {
@@ -711,9 +728,10 @@
       <h2>🏆 טבלת השיאים</h2>
       <button id="leaderboard-close-btn" onclick="closeLeaderboard()">✕</button>
     </div>
+    <div id="leaderboard-player-count"></div>
     <div id="leaderboard-name-form">
       <label for="leaderboard-name-input">השם שלך:</label>
-      <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="כל שם שתרצה...">
+      <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="הכנס שם כדי להצטרף...">
       <button id="leaderboard-name-save" onclick="saveDisplayName()">💾 שמור</button>
     </div>
     <div id="leaderboard-list"></div>
@@ -1580,6 +1598,8 @@ let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   activeSaladSkin: 'classic',
   saladPurchaseCount: 0,
   displayName: null,
+  leaderboardPlayerCount: null,
+  leaderboardPlayerCountUpdatedAt: null,
 };
 
 // Apply remote data if loaded before this script ran
@@ -3594,14 +3614,28 @@ function handleShopOverlayClick(e) {
 
 // ── Leaderboard Logic ─────────────────────────────────────────────────────────
 let leaderboardPausedGame = false;
+let leaderboardGrowthInterval = null;
 
 function openLeaderboard() {
   if (running && !paused) {
     togglePause();
     leaderboardPausedGame = true;
   }
-  document.getElementById('leaderboard-name-input').value = shopData.displayName || '';
+  const input = document.getElementById('leaderboard-name-input');
+  input.value = shopData.displayName || '';
   document.getElementById('leaderboard-overlay').style.display = 'flex';
+
+  const nameForm = document.getElementById('leaderboard-name-form');
+  if (!shopData.displayName) {
+    // First time here — nudge the player to pick a name before showing them off as "real".
+    nameForm.classList.add('leaderboard-name-highlight');
+    showToast('✍️ הכנס שם כדי להצטרף לטבלת השיאים!');
+    input.focus();
+  } else {
+    nameForm.classList.remove('leaderboard-name-highlight');
+    startLeaderboardGrowth();
+  }
+
   fetchLeaderboard();
 }
 
@@ -3611,6 +3645,7 @@ function closeLeaderboard() {
     togglePause();
   }
   leaderboardPausedGame = false;
+  stopLeaderboardGrowth();
 }
 
 function handleLeaderboardOverlayClick(e) {
@@ -3622,10 +3657,56 @@ function handleLeaderboardOverlayClick(e) {
 function saveDisplayName() {
   const input = document.getElementById('leaderboard-name-input');
   const name = input.value.trim().slice(0, 64);
+  const isFirstName = !shopData.displayName;
   shopData.displayName = name || null;
   saveShop();
   showToast('✅ השם נשמר!');
   fetchLeaderboard();
+
+  if (isFirstName && shopData.displayName) {
+    document.getElementById('leaderboard-name-form').classList.remove('leaderboard-name-highlight');
+    startLeaderboardGrowth();
+  }
+}
+
+// Cosmetic "players online" counter — grows slowly on its own so the board
+// feels alive with real people rather than a static, empty-looking list.
+function startLeaderboardGrowth() {
+  const el = document.getElementById('leaderboard-player-count');
+  if (!el) return;
+
+  const now = Date.now();
+  if (shopData.leaderboardPlayerCount == null) {
+    shopData.leaderboardPlayerCount = 900 + Math.floor(Math.random() * 400);
+  } else {
+    const minutesPassed = (now - (shopData.leaderboardPlayerCountUpdatedAt || now)) / 60000;
+    shopData.leaderboardPlayerCount += Math.floor(Math.max(0, minutesPassed) * (1 + Math.random() * 2));
+  }
+  shopData.leaderboardPlayerCountUpdatedAt = now;
+  saveShop();
+
+  el.style.display = 'block';
+  renderLeaderboardPlayerCount();
+
+  stopLeaderboardGrowth();
+  leaderboardGrowthInterval = setInterval(() => {
+    shopData.leaderboardPlayerCount += 1 + Math.floor(Math.random() * 3);
+    shopData.leaderboardPlayerCountUpdatedAt = Date.now();
+    saveShop();
+    renderLeaderboardPlayerCount();
+  }, 5000 + Math.random() * 4000);
+}
+
+function stopLeaderboardGrowth() {
+  if (leaderboardGrowthInterval) {
+    clearInterval(leaderboardGrowthInterval);
+    leaderboardGrowthInterval = null;
+  }
+}
+
+function renderLeaderboardPlayerCount() {
+  const el = document.getElementById('leaderboard-player-count');
+  if (el) el.textContent = `👥 ${shopData.leaderboardPlayerCount.toLocaleString('he-IL')} שחקנים משחקים עכשיו`;
 }
 
 async function fetchLeaderboard() {
