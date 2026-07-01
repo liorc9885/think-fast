@@ -401,6 +401,14 @@
       padding: 10px 14px;
     }
 
+    #leaderboard-player-count {
+      display: none;
+      margin: 10px 20px 0;
+      font-size: 0.78rem;
+      color: #7ee787;
+      text-align: center;
+    }
+
     #leaderboard-name-form label {
       font-size: 0.85rem;
       color: #ffd700;
@@ -711,6 +719,7 @@
       <h2>🏆 טבלת השיאים</h2>
       <button id="leaderboard-close-btn" onclick="closeLeaderboard()">✕</button>
     </div>
+    <div id="leaderboard-player-count"></div>
     <div id="leaderboard-name-form">
       <label for="leaderboard-name-input">השם שלך:</label>
       <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="כל שם שתרצה...">
@@ -3636,10 +3645,23 @@ async function fetchLeaderboard() {
     if (!res.ok) throw new Error('bad status ' + res.status);
     const data = await res.json();
     renderLeaderboard(data.entries || []);
+    renderLeaderboardPlayerCount(data.totalPlayers);
   } catch (e) {
     console.error('[API] טעינת טבלת שיאים נכשלה:', e);
     list.innerHTML = '<div class="leaderboard-empty">שגיאה בטעינת טבלת השיאים</div>';
   }
+}
+
+// Real registered-player count from the server (not a simulated/growing number).
+function renderLeaderboardPlayerCount(totalPlayers) {
+  const el = document.getElementById('leaderboard-player-count');
+  if (!el) return;
+  if (typeof totalPlayers !== 'number') {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  el.textContent = `👥 ${totalPlayers.toLocaleString('he-IL')} שחקנים רשומים`;
 }
 
 function renderLeaderboard(entries) {
