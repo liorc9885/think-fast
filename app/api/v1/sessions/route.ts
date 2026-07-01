@@ -12,8 +12,8 @@ export function OPTIONS(req: NextRequest) {
 }
 
 // POST /api/v1/sessions — record one completed game (the activity record).
-// Also bumps player_progress.high_score when the score beats the stored best
-// (schema groundwork for the future scoreboard; no scoreboard endpoint yet).
+// Also bumps player_progress.high_score when the score beats the stored best,
+// which is what GET /api/v1/leaderboard ranks players by.
 export async function POST(req: NextRequest) {
   const origin = req.headers.get('origin');
   const playerId = getPlayerId(req);
@@ -57,10 +57,17 @@ export async function POST(req: NextRequest) {
 
   const currentBest = prog?.high_score ?? 0;
   if (parsed.data.score > currentBest) {
+    // Upsert (not update): a brand-new player who hasn't saved progress yet has
+    // no player_progress row, so a plain update would match 0 rows and silently
+    // drop the high score — the player would never show up on the leaderboard.
+    // onConflict leaves existing coins/skins untouched and only bumps high_score;
+    // on insert the other columns fall back to their table defaults.
     const { data: updated } = await supabase
       .from('player_progress')
-      .update({ high_score: parsed.data.score })
-      .eq('player_id', playerId)
+      .upsert(
+        { player_id: playerId, high_score: parsed.data.score },
+        { onConflict: 'player_id' },
+      )
       .select('high_score')
       .maybeSingle();
     highScore = updated?.high_score ?? parsed.data.score;
