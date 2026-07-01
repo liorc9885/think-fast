@@ -3415,7 +3415,8 @@ function renderShop() {
   const grid = document.getElementById('skin-grid');
   grid.innerHTML = '';
 
-  SKINS.forEach(skin => {
+  const sortedSkins = [...SKINS].sort((a, b) => a.tier - b.tier || a.price - b.price);
+  sortedSkins.forEach(skin => {
     const isOwned  = shopData.ownedSkins.includes(skin.id);
     const isActive = shopData.activeSkin === skin.id;
     const isLocked = owned < skin.requireOwned;
@@ -3544,7 +3545,8 @@ function renderBurgerShop() {
   const grid = document.getElementById('burger-skin-grid');
   grid.innerHTML = '';
 
-  BURGER_SKINS.forEach(skin => {
+  const sortedBurgerSkins = [...BURGER_SKINS].sort((a, b) => a.tier - b.tier || a.price - b.price);
+  sortedBurgerSkins.forEach(skin => {
     const isOwned  = shopData.ownedBurgerSkins.includes(skin.id);
     const isActive = shopData.activeBurgerSkin === skin.id;
     const isLocked = owned < skin.requireOwned;
@@ -3655,7 +3657,8 @@ function renderPizzaShop() {
   const grid = document.getElementById('pizza-skin-grid');
   grid.innerHTML = '';
 
-  PIZZA_SKINS.forEach(skin => {
+  const sortedPizzaSkins = [...PIZZA_SKINS].sort((a, b) => a.tier - b.tier || a.price - b.price);
+  sortedPizzaSkins.forEach(skin => {
     const isOwned  = shopData.ownedPizzaSkins.includes(skin.id);
     const isActive = shopData.activePizzaSkin === skin.id;
     const isLocked = owned < skin.requireOwned;
@@ -3752,7 +3755,8 @@ function renderSaladShop() {
   const grid = document.getElementById('salad-skin-grid');
   grid.innerHTML = '';
 
-  SALAD_SKINS.forEach(skin => {
+  const sortedSaladSkins = [...SALAD_SKINS].sort((a, b) => a.tier - b.tier || a.price - b.price);
+  sortedSaladSkins.forEach(skin => {
     const isOwned  = shopData.ownedSaladSkins.includes(skin.id);
     const isActive = shopData.activeSaladSkin === skin.id;
     const isLocked = owned < skin.requireOwned;
