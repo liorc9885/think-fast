@@ -23,6 +23,9 @@ export default function Home() {
         <li>
           <code>POST /api/v1/activity</code>
         </li>
+        <li>
+          <code>GET /api/v1/leaderboard</code>
+        </li>
       </ul>
     </main>
   );
