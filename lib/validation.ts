@@ -102,6 +102,21 @@ export function defaultProgress() {
   };
 }
 
+// ── Profile (display name only) ───────────────────────────────────────────────
+export const profileSchema = z.object({
+  displayName: z.string().trim().min(1).max(64).nullable(),
+});
+
+export type ProfileInput = z.infer<typeof profileSchema>;
+
+// ── Coin transfer ───────────────────────────────────────────────────────────
+export const transferSchema = z.object({
+  toDisplayName: z.string().trim().min(1).max(64),
+  amount: z.number().int().min(1).max(1_000_000_000),
+});
+
+export type TransferInput = z.infer<typeof transferSchema>;
+
 // ── Game session (game_sessions row) ──────────────────────────────────────────
 export const clientSchema = z.enum(['web', 'android', 'ios']).default('web');
 

@@ -7,7 +7,8 @@ export default function Home() {
       <h1>Think-Fast</h1>
       <p>
         API server for the <strong>המבורגר נופל!</strong> game. The game is served
-        at <a href="/game/index.html">/game</a>. API lives under{' '}
+        at <a href="/game/index.html">/game</a>. See the{' '}
+        <a href="/leaderboard">leaderboard</a>. API lives under{' '}
         <code>/api/v1/*</code>.
       </p>
       <ul>
@@ -16,6 +17,12 @@ export default function Home() {
         </li>
         <li>
           <code>GET|PUT /api/v1/progress</code>
+        </li>
+        <li>
+          <code>PUT /api/v1/profile</code>
+        </li>
+        <li>
+          <code>POST /api/v1/transfer</code>
         </li>
         <li>
           <code>POST /api/v1/sessions</code>
