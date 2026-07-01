@@ -135,6 +135,24 @@
     }
     #shop-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
 
+    #top-btn {
+      position: absolute;
+      top: 54px;
+      right: 10px;
+      background: linear-gradient(135deg, #f1c40f, #d4a017);
+      border: none;
+      color: #1a1a2e;
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.1s, filter 0.1s;
+      box-shadow: 0 2px 8px rgba(241,196,15,0.4);
+    }
+    #top-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
+
     /* ── Shop overlay ───────────────────────────────────────────────────── */
     #shop-overlay {
       position: fixed;
@@ -314,6 +332,153 @@
     .btn-active { background: linear-gradient(135deg, #ffd700, #e67e22); color: #1a1a2e; }
     .btn-locked { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
 
+    /* ── Leaderboard overlay ────────────────────────────────────────────── */
+    #leaderboard-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadein 0.2s ease;
+    }
+
+    #leaderboard-panel {
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      border: 2px solid rgba(255,215,0,0.3);
+      border-radius: 24px;
+      width: min(420px, 96vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 0 0 20px 0;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,215,0,0.1);
+    }
+
+    #leaderboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: sticky;
+      top: 0;
+      background: linear-gradient(160deg, #1a1a2e, #16213e);
+      border-radius: 24px 24px 0 0;
+      z-index: 1;
+    }
+
+    #leaderboard-header h2 {
+      font-size: 1.3rem;
+      color: #ffd700;
+      text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+
+    #leaderboard-close-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #leaderboard-close-btn:hover { background: rgba(255,255,255,0.25); }
+
+    #leaderboard-name-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 20px 0;
+      background: rgba(255,215,0,0.08);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 14px;
+      padding: 10px 14px;
+    }
+
+    #leaderboard-name-form label {
+      font-size: 0.85rem;
+      color: #ffd700;
+      white-space: nowrap;
+    }
+
+    #leaderboard-name-input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #fff;
+      padding: 7px 10px;
+      font-size: 0.9rem;
+    }
+    #leaderboard-name-input:focus { outline: none; border-color: #ffd700; }
+
+    #leaderboard-name-save {
+      background: linear-gradient(135deg, #27ae60, #1e8449);
+      border: none;
+      color: #fff;
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.1s, filter 0.1s;
+    }
+    #leaderboard-name-save:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+    #leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px 20px 0;
+    }
+
+    .leaderboard-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 8px 12px;
+    }
+
+    .leaderboard-rank {
+      font-weight: bold;
+      color: #ffd700;
+      width: 28px;
+      text-align: center;
+    }
+
+    .leaderboard-name {
+      flex: 1;
+      color: #fff;
+      font-size: 0.88rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .leaderboard-score {
+      font-weight: bold;
+      color: #ffd700;
+      font-size: 0.88rem;
+    }
+
+    .leaderboard-empty {
+      color: rgba(255,255,255,0.55);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 20px 0;
+    }
+
     /* ── Toast notification ─────────────────────────────────────────────── */
     #toast {
       position: fixed;
@@ -484,6 +649,7 @@
 
   <button id="pause-btn" onclick="togglePause()">⏸ השהה</button>
   <button id="shop-btn" onclick="openShop()">🛍️ חנות</button>
+  <button id="top-btn" onclick="openLeaderboard()">🏆 טופ</button>
 
   <div id="overlay">
     <div id="message-box">
@@ -535,6 +701,22 @@
       <div id="salad-owned-info" style="margin:10px 20px 4px;font-size:0.82rem;color:rgba(255,255,255,0.55);">סקיני הסלט שלך: <b id="salad-owned-count">1</b></div>
       <div id="salad-skin-grid" class="skin-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 14px 0;"></div>
     </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div id="leaderboard-overlay" style="display:none;" onclick="handleLeaderboardOverlayClick(event)">
+  <div id="leaderboard-panel">
+    <div id="leaderboard-header">
+      <h2>🏆 טבלת השיאים</h2>
+      <button id="leaderboard-close-btn" onclick="closeLeaderboard()">✕</button>
+    </div>
+    <div id="leaderboard-name-form">
+      <label for="leaderboard-name-input">השם שלך:</label>
+      <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="כל שם שתרצה...">
+      <button id="leaderboard-name-save" onclick="saveDisplayName()">💾 שמור</button>
+    </div>
+    <div id="leaderboard-list"></div>
   </div>
 </div>
 
@@ -602,6 +784,7 @@ async function apiSaveProgress(shopData, opts = {}) {
     ownedSaladSkins: shopData.ownedSaladSkins,
     activeSaladSkin: shopData.activeSaladSkin,
     saladPurchaseCount: shopData.saladPurchaseCount,
+    displayName: shopData.displayName ?? null,
   };
   try {
     const res = await fetch(`${API_BASE}/api/v1/progress`, {
@@ -1396,6 +1579,7 @@ let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
   ownedSaladSkins: ['classic'],
   activeSaladSkin: 'classic',
   saladPurchaseCount: 0,
+  displayName: null,
 };
 
 // Apply remote data if loaded before this script ran
@@ -3406,6 +3590,78 @@ function closeShop() {
 
 function handleShopOverlayClick(e) {
   if (e.target === document.getElementById('shop-overlay')) closeShop();
+}
+
+// ── Leaderboard Logic ─────────────────────────────────────────────────────────
+let leaderboardPausedGame = false;
+
+function openLeaderboard() {
+  if (running && !paused) {
+    togglePause();
+    leaderboardPausedGame = true;
+  }
+  document.getElementById('leaderboard-name-input').value = shopData.displayName || '';
+  document.getElementById('leaderboard-overlay').style.display = 'flex';
+  fetchLeaderboard();
+}
+
+function closeLeaderboard() {
+  document.getElementById('leaderboard-overlay').style.display = 'none';
+  if (leaderboardPausedGame && paused) {
+    togglePause();
+  }
+  leaderboardPausedGame = false;
+}
+
+function handleLeaderboardOverlayClick(e) {
+  if (e.target === document.getElementById('leaderboard-overlay')) closeLeaderboard();
+}
+
+// Any player can type any name they like — there's no signup/verification step,
+// the box is just a free-text label attached to their (anonymous) player id.
+function saveDisplayName() {
+  const input = document.getElementById('leaderboard-name-input');
+  const name = input.value.trim().slice(0, 64);
+  shopData.displayName = name || null;
+  saveShop();
+  showToast('✅ השם נשמר!');
+  fetchLeaderboard();
+}
+
+async function fetchLeaderboard() {
+  const list = document.getElementById('leaderboard-list');
+  list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/leaderboard`);
+    if (!res.ok) throw new Error('bad status ' + res.status);
+    const data = await res.json();
+    renderLeaderboard(data.entries || []);
+  } catch (e) {
+    console.error('[API] טעינת טבלת שיאים נכשלה:', e);
+    list.innerHTML = '<div class="leaderboard-empty">שגיאה בטעינת טבלת השיאים</div>';
+  }
+}
+
+function renderLeaderboard(entries) {
+  const list = document.getElementById('leaderboard-list');
+  if (!entries.length) {
+    list.innerHTML = '<div class="leaderboard-empty">אין עדיין שיאים — היה הראשון! 🍔</div>';
+    return;
+  }
+  const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  list.innerHTML = entries.map(e => `
+    <div class="leaderboard-row">
+      <span class="leaderboard-rank">${medals[e.rank] || e.rank}</span>
+      <span class="leaderboard-name">${escapeHtml(e.displayName)}</span>
+      <span class="leaderboard-score">⭐ ${e.score}</span>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function renderShop() {
