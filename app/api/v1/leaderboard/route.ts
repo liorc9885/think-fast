@@ -26,14 +26,17 @@ export async function GET(req: NextRequest) {
   );
 
   const supabase = getSupabaseAdmin();
-  const { data, error: dbErr } = await supabase
-    .from('player_progress')
-    .select('display_name, high_score')
-    .gt('high_score', 0)
-    .order('high_score', { ascending: false })
-    .limit(limit);
+  const [{ data, error: dbErr }, { count: totalPlayers, error: countErr }] = await Promise.all([
+    supabase
+      .from('player_progress')
+      .select('display_name, high_score')
+      .gt('high_score', 0)
+      .order('high_score', { ascending: false })
+      .limit(limit),
+    supabase.from('player_progress').select('player_id', { count: 'exact', head: true }),
+  ]);
 
-  if (dbErr) return error('Database error', 500, origin);
+  if (dbErr || countErr) return error('Database error', 500, origin);
 
   const entries = (data || []).map((row, i) => ({
     rank: i + 1,
@@ -41,5 +44,5 @@ export async function GET(req: NextRequest) {
     score: row.high_score,
   }));
 
-  return json({ entries }, { origin });
+  return json({ entries, totalPlayers: totalPlayers ?? 0 }, { origin });
 }
