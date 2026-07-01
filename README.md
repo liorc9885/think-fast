@@ -20,11 +20,15 @@ See [`docs/server-plan.md`](./docs/server-plan.md) for the full plan.
 | GET    | `/api/v1/health`     | Readiness check                                    |
 | GET    | `/api/v1/progress`   | Load player progress (defaults for a new id)       |
 | PUT    | `/api/v1/progress`   | Upsert progress (validated, sets `updated_at`)     |
+| PUT    | `/api/v1/profile`    | Set/change display name (unique, case-insensitive) |
+| POST   | `/api/v1/transfer`   | Send coins to another player by display name       |
 | POST   | `/api/v1/sessions`   | Record a completed game; bumps `high_score`        |
 | POST   | `/api/v1/activity`   | Generic event ingestion (future events/funnels)    |
+| GET    | `/api/v1/leaderboard`| Top players (name, score, coins, skin count)       |
 
-`GET /api/v1/leaderboard` is **deliberately not built yet** (schema is ready;
-pairs with the Phase 4 scoreboard pages).
+`/leaderboard` (Phase 4 scoreboard page) shows the top 30 players, lets you
+set/change your display name, and lets you send coins to another player by
+name.
 
 ## Environment variables (set in Vercel, never committed)
 
