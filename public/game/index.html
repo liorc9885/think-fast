@@ -462,6 +462,11 @@
       padding: 8px 12px;
     }
 
+    .leaderboard-me {
+      background: rgba(255,215,0,0.15);
+      border-color: #ffd700;
+    }
+
     .leaderboard-rank {
       font-weight: bold;
       color: #ffd700;
@@ -3676,10 +3681,12 @@ async function fetchLeaderboard(silent = false) {
   const list = document.getElementById('leaderboard-list');
   if (!silent) list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
   try {
-    const res = await fetch(`${API_BASE}/api/v1/leaderboard`);
+    const res = await fetch(`${API_BASE}/api/v1/leaderboard`, {
+      headers: { 'X-Player-Id': getPlayerId() },
+    });
     if (!res.ok) throw new Error('bad status ' + res.status);
     const data = await res.json();
-    renderLeaderboard(data.entries || []);
+    renderLeaderboard(data.entries || [], data.me || null);
   } catch (e) {
     console.error('[API] טעינת טבלת שיאים נכשלה:', e);
     if (silent) return; // keep the last good list on a background refresh failure
@@ -3687,14 +3694,25 @@ async function fetchLeaderboard(silent = false) {
   }
 }
 
-function renderLeaderboard(entries) {
+function renderLeaderboard(entries, me) {
   const list = document.getElementById('leaderboard-list');
+  // Pin the player's own saved name at the top so it shows right after saving.
+  const meRow = me ? `
+    <div class="leaderboard-row leaderboard-me">
+      <span class="leaderboard-rank">👤</span>
+      <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה)</span>
+      <span class="leaderboard-score">⭐ ${me.score}</span>
+    </div>` : '';
   if (!entries.length) {
+    if (meRow) {
+      list.innerHTML = meRow + '<div class="leaderboard-empty">אין עדיין שיאים — היה הראשון! 🍔</div>';
+      return;
+    }
     list.innerHTML = '<div class="leaderboard-empty">אין עדיין שיאים — היה הראשון! 🍔</div>';
     return;
   }
   const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
-  list.innerHTML = entries.map(e => `
+  list.innerHTML = meRow + entries.map(e => `
     <div class="leaderboard-row">
       <span class="leaderboard-rank">${medals[e.rank] || e.rank}</span>
       <span class="leaderboard-name">${escapeHtml(e.displayName)}</span>

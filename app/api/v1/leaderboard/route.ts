@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { preflight } from '@/lib/cors';
 import { json, error, rateLimit } from '@/lib/http';
+import { getPlayerId } from '@/lib/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,5 +46,20 @@ export async function GET(req: NextRequest) {
     score: row.high_score,
   }));
 
-  return json({ entries }, { origin });
+  // Optional X-Player-Id: also return the caller's own saved name/score so the
+  // client can pin it at the top even before they have a score on the board.
+  let me: { displayName: string; score: number } | null = null;
+  const playerId = getPlayerId(req);
+  if (playerId) {
+    const { data: mine } = await supabase
+      .from('player_progress')
+      .select('display_name, high_score')
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (mine?.display_name && mine.display_name !== 'אנונימי') {
+      me = { displayName: mine.display_name, score: mine.high_score ?? 0 };
+    }
+  }
+
+  return json({ entries, me }, { origin });
 }
