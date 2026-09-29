@@ -3781,15 +3781,6 @@ function handleLeaderboardOverlayClick(e) {
   if (e.target === document.getElementById('leaderboard-overlay')) closeLeaderboard();
 }
 
-// ── Personal link (used by the in-app browser banner) ──────────────────────────────────────────────
-function personalLink() {
-  const u = new URL(location.href);
-  u.search = '';
-  u.hash = '';
-  u.searchParams.set('p', getPlayerId());
-  return u.toString();
-}
-
 // Any player can type any name they like — there's no signup/verification step,
 // the box is just a free-text label attached to their (anonymous) player id.
 async function saveDisplayName() {
