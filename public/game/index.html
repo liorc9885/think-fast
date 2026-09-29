@@ -3766,7 +3766,7 @@ function renderLeaderboard(entries, me) {
   const list = document.getElementById('leaderboard-list');
   // Mark the player's own row "(אתה)" inside the list; pin a separate row at the
   // top only when they are not in the list (no score yet / outside the top).
-  const inList = !!(me && me.rank && entries.some(e => e.rank === me.rank && e.displayName === me.displayName));
+  const inList = !!(me && me.rank && entries.some(e => e.isMe));
   const meRow = me && !inList ? `
     <div class="leaderboard-row leaderboard-me">
       <span class="leaderboard-rank">${me.rank ? ({ 1: '🥇 ', 2: '🥈 ', 3: '🥉 ' }[me.rank] || '') + me.rank : '👤'}</span>
@@ -3783,9 +3783,9 @@ function renderLeaderboard(entries, me) {
   }
   const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
   list.innerHTML = meRow + entries.map(e => `
-    <div class="leaderboard-row${me && e.rank === me.rank && e.displayName === me.displayName ? ' leaderboard-me' : ''}">
+    <div class="leaderboard-row${e.isMe ? ' leaderboard-me' : ''}">
       <span class="leaderboard-rank">${medals[e.rank] ? medals[e.rank] + " " : ""}${e.rank}</span>
-      <span class="leaderboard-name">${escapeHtml(e.displayName)}${me && e.rank === me.rank && e.displayName === me.displayName ? ' (אתה)' : ''}</span>
+      <span class="leaderboard-name">${escapeHtml(e.displayName)}${e.isMe ? ' (אתה)' : ''}</span>
       <span class="leaderboard-score">${LEADERBOARD_ICONS[leaderboardBoard]} ${e.score}</span>
     </div>
   `).join('');
