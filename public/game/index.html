@@ -470,7 +470,8 @@
     .leaderboard-rank {
       font-weight: bold;
       color: #ffd700;
-      width: 28px;
+      min-width: 52px;
+      white-space: nowrap;
       text-align: center;
     }
 
@@ -3714,7 +3715,7 @@ function renderLeaderboard(entries, me) {
   const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
   list.innerHTML = meRow + entries.map(e => `
     <div class="leaderboard-row">
-      <span class="leaderboard-rank">${medals[e.rank] || e.rank}</span>
+      <span class="leaderboard-rank">${medals[e.rank] ? medals[e.rank] + " " : ""}${e.rank}</span>
       <span class="leaderboard-name">${escapeHtml(e.displayName)}</span>
       <span class="leaderboard-score">⭐ ${e.score}</span>
     </div>
