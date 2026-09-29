@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   const limit = Math.min(
-    Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '20', 10) || 20, 1),
+    Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '100', 10) || 100, 1),
     100,
   );
 
