@@ -445,6 +445,28 @@
     }
     #leaderboard-name-save:hover { transform: scale(1.05); filter: brightness(1.1); }
 
+    #leaderboard-tabs {
+      display: flex;
+      gap: 6px;
+      margin: 14px 20px 0;
+    }
+    .lb-tab {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .lb-tab.active {
+      background: rgba(255,215,0,0.2);
+      border-color: #ffd700;
+      color: #ffd700;
+    }
+
     #leaderboard-list {
       display: flex;
       flex-direction: column;
@@ -735,6 +757,11 @@
       <label for="leaderboard-name-input">השם שלך:</label>
       <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="כל שם שתרצה...">
       <button id="leaderboard-name-save" onclick="saveDisplayName()">💾 שמור</button>
+    </div>
+    <div id="leaderboard-tabs">
+      <button class="lb-tab" data-board="items" onclick="setLeaderboardBoard('items')">🎒 פריטים</button>
+      <button class="lb-tab active" data-board="score" onclick="setLeaderboardBoard('score')">⭐ ניקוד</button>
+      <button class="lb-tab" data-board="coins" onclick="setLeaderboardBoard('coins')">🪙 כסף</button>
     </div>
     <div id="leaderboard-list"></div>
   </div>
@@ -3616,6 +3643,16 @@ function handleShopOverlayClick(e) {
 
 // ── Leaderboard Logic ─────────────────────────────────────────────────────────
 let leaderboardPausedGame = false;
+let leaderboardBoard = 'score';
+const LEADERBOARD_ICONS = { items: '🎒', score: '⭐', coins: '🪙' };
+
+function setLeaderboardBoard(board) {
+  leaderboardBoard = board;
+  document.querySelectorAll('.lb-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.board === board));
+  fetchLeaderboard();
+  startLeaderboardPolling();
+}
 
 function openLeaderboard() {
   if (running && !paused) {
@@ -3682,7 +3719,7 @@ async function fetchLeaderboard(silent = false) {
   const list = document.getElementById('leaderboard-list');
   if (!silent) list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
   try {
-    const res = await fetch(`${API_BASE}/api/v1/leaderboard?limit=100`, {
+    const res = await fetch(`${API_BASE}/api/v1/leaderboard?limit=100&board=${leaderboardBoard}`, {
       headers: { 'X-Player-Id': getPlayerId() },
     });
     if (!res.ok) throw new Error('bad status ' + res.status);
@@ -3702,7 +3739,7 @@ function renderLeaderboard(entries, me) {
     <div class="leaderboard-row leaderboard-me">
       <span class="leaderboard-rank">👤</span>
       <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה)</span>
-      <span class="leaderboard-score">⭐ ${me.score}</span>
+      <span class="leaderboard-score">${LEADERBOARD_ICONS[leaderboardBoard]} ${me.score}</span>
     </div>` : '';
   if (!entries.length) {
     if (meRow) {
@@ -3717,7 +3754,7 @@ function renderLeaderboard(entries, me) {
     <div class="leaderboard-row">
       <span class="leaderboard-rank">${medals[e.rank] ? medals[e.rank] + " " : ""}${e.rank}</span>
       <span class="leaderboard-name">${escapeHtml(e.displayName)}</span>
-      <span class="leaderboard-score">⭐ ${e.score}</span>
+      <span class="leaderboard-score">${LEADERBOARD_ICONS[leaderboardBoard]} ${e.score}</span>
     </div>
   `).join('');
 }
