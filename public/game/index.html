@@ -809,11 +809,13 @@ async function apiSaveProgress(shopData, opts = {}) {
     });
     if (!res.ok) {
       console.error('[API] שגיאה בשמירה:', res.status);
-    } else {
-      console.log('[API] נשמר בהצלחה');
+      return false;
     }
+    console.log('[API] נשמר בהצלחה');
+    return true;
   } catch (e) {
     console.error('[API] שמירה נכשלה (offline?):', e);
+    return false;
   }
 }
 
@@ -1620,10 +1622,10 @@ function saveShop() {
   // is down; the API is the source of truth when reachable.
   localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
   if (window._apiSaveProgress) {
-    window._apiSaveProgress(shopData);
-  } else {
-    console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
+    return window._apiSaveProgress(shopData);
   }
+  console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
+  return Promise.resolve(false);
 }
 
 function addCoins(n) {
@@ -3635,13 +3637,22 @@ function handleLeaderboardOverlayClick(e) {
 
 // Any player can type any name they like — there's no signup/verification step,
 // the box is just a free-text label attached to their (anonymous) player id.
-function saveDisplayName() {
+async function saveDisplayName() {
   const input = document.getElementById('leaderboard-name-input');
+  const btn = document.getElementById('leaderboard-name-save');
   const name = input.value.trim().slice(0, 64);
   shopData.displayName = name || null;
-  saveShop();
-  showToast('✅ השם נשמר!');
-  fetchLeaderboard();
+  btn.disabled = true;
+  try {
+    // Wait for the server to store the name before re-reading the board,
+    // otherwise the refresh races the save and shows the old list.
+    const ok = await saveShop();
+    showToast(ok ? '✅ השם נשמר!' : '⚠️ השם נשמר מקומית בלבד — נסה שוב');
+    await fetchLeaderboard();
+    startLeaderboardPolling(); // restart the 5s cycle from now
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // While the leaderboard is open it refreshes itself every few seconds, so a
