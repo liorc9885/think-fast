@@ -177,6 +177,15 @@
       direction: rtl;
       text-align: center;
     }
+    /* iPhone in-app browsers wipe storage on close: make the warning impossible to miss. */
+    #inapp-banner.ios {
+      top: 0; bottom: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(150, 30, 20, 0.97);
+      font-size: 1.1rem; line-height: 1.6;
+      padding: 24px;
+    }
+    #inapp-banner.ios button { font-size: 1rem; padding: 10px 18px; }
     #inapp-banner button {
       margin: 6px 4px 0;
       border: none;
@@ -858,6 +867,7 @@ function getPlayerId() {
   const storedId = safeStorageGet('thinkFastPlayerId') || readIdCookie();
   let id = urlId || storedId;
   if (!id) {
+    window._freshIdentity = true; // no id in URL/storage/cookie: first visit, or storage was wiped
     id = makeUuid();
     console.log('[API] נוצר player_id חדש:', id);
   }
@@ -966,22 +976,33 @@ window._apiReady = false;
 
 // Load-on-start + the local-vs-remote "higher coins wins" merge (kept client-side
 // against GET /progress, as before). localStorage stays as the offline cache.
-apiGetProgress().then(remote => {
-  if (remote) {
-    const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
-    if (!local || remote.coins >= local.coins) {
-      console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
-      Object.assign(window._pendingShopData || {}, remote);
-      window._remoteShopData = remote;
-      if (window._applyRemoteShop) window._applyRemoteShop(remote);
+// Until the server copy has been read successfully, never PUT progress: the page
+// starts with default (0 coins) data, and an early save (e.g. the exit flush when
+// the player leaves right after opening) would overwrite their real progress.
+window._remoteLoaded = false;
+function loadRemoteProgress() {
+  return apiGetProgress().then(remote => {
+    if (remote) {
+      window._remoteLoaded = true;
+      const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
+      if (!local || remote.coins >= local.coins) {
+        console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
+        Object.assign(window._pendingShopData || {}, remote);
+        window._remoteShopData = remote;
+        if (window._applyRemoteShop) window._applyRemoteShop(remote);
+      } else {
+        console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
+        apiSaveProgress(local);
+      }
     } else {
-      console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
-      apiSaveProgress(local);
+      // Server unreachable: keep playing from the local cache and retry.
+      setTimeout(loadRemoteProgress, 5000);
     }
-  }
-  window._apiReady = true;
-  console.log('[API] אתחול הושלם');
-});
+    window._apiReady = true;
+    console.log('[API] אתחול הושלם');
+  });
+}
+loadRemoteProgress();
 </script>
 
 <script>
@@ -1752,7 +1773,7 @@ function saveShop() {
   // localStorage stays as the offline cache so the game still plays if the API
   // is down; the API is the source of truth when reachable.
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress) {
+  if (window._apiSaveProgress && window._remoteLoaded) {
     return window._apiSaveProgress(shopData);
   }
   console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
@@ -3805,14 +3826,29 @@ function personalLink() {
 // browser is the safest fix.
 (function showInAppBanner() {
   const ua = navigator.userAgent || '';
-  const inApp = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Telegram|Snapchat|TikTok|musical_ly|Twitter|LinkedInApp/i.test(ua);
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  // iOS's WhatsApp browser (SFSafariViewController) has a normal Safari user agent,
+  // so it can't be detected by UA. A fresh identity on iPhone (outside an installed
+  // home-screen app) means either a first visit or wiped storage: warn in both cases.
+  const standalone = window.navigator.standalone === true;
+  const inApp = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Telegram|Snapchat|TikTok|musical_ly|Twitter|LinkedInApp/i.test(ua)
+    || (isIos && !standalone && window._freshIdentity === true);
   if (!inApp) return;
   try { if (sessionStorage.getItem('thinkFastInAppDismissed')) return; } catch (e) {}
   const el = document.createElement('div');
   el.id = 'inapp-banner';
-  el.innerHTML = '⚠️ נפתחת בתוך אפליקציה, וההתקדמות שלך עלולה להימחק.<br>' +
-    'העתק את הקישור ופתח אותו ב-Safari / Chrome.<br>' +
-    '<button id="inapp-copy">📋 העתק קישור</button><button id="inapp-close">✕</button>';
+  if (isIos) {
+    el.className = 'ios';
+    el.innerHTML = '⚠️ <b>ההתקדמות והמטבעות שלך יימחקו!</b><br>' +
+      'אם פתחת את המשחק מתוך WhatsApp, באייפון הוא מוחק הכול כשסוגרים.<br>' +
+      '1. לחץ "העתק קישור"<br>2. פתח את Safari והדבק בשורת הכתובת<br>' +
+      '<button id="inapp-copy">📋 העתק קישור</button>' +
+      '<button id="inapp-close">המשך בכל זאת (ללא שמירה)</button>';
+  } else {
+    el.innerHTML = '⚠️ נפתחת בתוך אפליקציה, וההתקדמות שלך עלולה להימחק.<br>' +
+      'העתק את הקישור ופתח אותו ב-Safari / Chrome.<br>' +
+      '<button id="inapp-copy">📋 העתק קישור</button><button id="inapp-close">✕</button>';
+  }
   document.body.appendChild(el);
   document.getElementById('inapp-copy').onclick = async () => {
     try { await navigator.clipboard.writeText(personalLink()); } catch (e) {}
@@ -6162,7 +6198,7 @@ function flushOnExit() {
 
   // 1. Persist the latest progress (coins + all skins).
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress) {
+  if (window._apiSaveProgress && window._remoteLoaded) {
     window._apiSaveProgress(shopData, { keepalive: true });
   }
 
