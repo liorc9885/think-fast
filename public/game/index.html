@@ -3767,8 +3767,8 @@ function renderLeaderboard(entries, me) {
   // Pin the player's own saved name at the top so it shows right after saving.
   const meRow = me ? `
     <div class="leaderboard-row leaderboard-me">
-      <span class="leaderboard-rank">${me.rank ? '#' + me.rank : '👤'}</span>
-      <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה${me.rank ? ' — מקום ' + me.rank : ''})</span>
+      <span class="leaderboard-rank">${me.rank ? ({ 1: '🥇 ', 2: '🥈 ', 3: '🥉 ' }[me.rank] || '') + me.rank : '👤'}</span>
+      <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה)</span>
       <span class="leaderboard-score">${LEADERBOARD_ICONS[leaderboardBoard]} ${me.score}</span>
     </div>` : '';
   if (!entries.length) {
