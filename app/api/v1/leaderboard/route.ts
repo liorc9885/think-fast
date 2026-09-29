@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
   const cols =
-    'display_name, high_score, coins, owned_skins, owned_burger_skins, owned_pizza_skins, owned_salad_skins';
+    'player_id, display_name, high_score, coins, owned_skins, owned_burger_skins, owned_pizza_skins, owned_salad_skins';
   const named = () =>
     supabase
       .from('player_progress')
@@ -67,8 +67,13 @@ export async function GET(req: NextRequest) {
 
   if (dbErr) return error('Database error', 500, origin);
 
+  const playerId = getPlayerId(req);
   const entries = (data || [])
-    .map((row) => ({ displayName: row.display_name, score: valueOf(row, board as Board) }))
+    .map((row) => ({
+      displayName: row.display_name,
+      score: valueOf(row, board as Board),
+      isMe: !!playerId && row.player_id === playerId,
+    }))
     .filter((e) => e.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
@@ -77,7 +82,6 @@ export async function GET(req: NextRequest) {
   // Optional X-Player-Id: also return the caller's own saved name/score so the
   // client can pin it at the top even before they have a score on the board.
   let me: { displayName: string; score: number; rank: number | null } | null = null;
-  const playerId = getPlayerId(req);
   if (playerId) {
     const { data: mine } = await supabase
       .from('player_progress')
@@ -96,6 +100,8 @@ export async function GET(req: NextRequest) {
           rank = (count ?? 0) + 1;
         }
       }
+      const own = entries.find((e) => e.isMe);
+      if (own) rank = own.rank;
       me = { displayName: mine.display_name, score, rank };
     }
   }
