@@ -3617,10 +3617,12 @@ function openLeaderboard() {
   document.getElementById('leaderboard-name-input').value = shopData.displayName || '';
   document.getElementById('leaderboard-overlay').style.display = 'flex';
   fetchLeaderboard();
+  startLeaderboardPolling();
 }
 
 function closeLeaderboard() {
   document.getElementById('leaderboard-overlay').style.display = 'none';
+  stopLeaderboardPolling();
   if (leaderboardPausedGame && paused) {
     togglePause();
   }
@@ -3642,9 +3644,26 @@ function saveDisplayName() {
   fetchLeaderboard();
 }
 
-async function fetchLeaderboard() {
+// While the leaderboard is open it refreshes itself every few seconds, so a
+// score/name change (yours or anyone else's) shows up without reopening it.
+const LEADERBOARD_REFRESH_MS = 5000;
+let leaderboardTimer = null;
+
+function startLeaderboardPolling() {
+  stopLeaderboardPolling();
+  leaderboardTimer = setInterval(() => {
+    if (!document.hidden) fetchLeaderboard(true);
+  }, LEADERBOARD_REFRESH_MS);
+}
+
+function stopLeaderboardPolling() {
+  if (leaderboardTimer) clearInterval(leaderboardTimer);
+  leaderboardTimer = null;
+}
+
+async function fetchLeaderboard(silent = false) {
   const list = document.getElementById('leaderboard-list');
-  list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
+  if (!silent) list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
   try {
     const res = await fetch(`${API_BASE}/api/v1/leaderboard`);
     if (!res.ok) throw new Error('bad status ' + res.status);
@@ -3652,6 +3671,7 @@ async function fetchLeaderboard() {
     renderLeaderboard(data.entries || []);
   } catch (e) {
     console.error('[API] טעינת טבלת שיאים נכשלה:', e);
+    if (silent) return; // keep the last good list on a background refresh failure
     list.innerHTML = '<div class="leaderboard-empty">שגיאה בטעינת טבלת השיאים</div>';
   }
 }
