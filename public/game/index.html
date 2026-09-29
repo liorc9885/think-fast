@@ -165,6 +165,22 @@
     }
     #top-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
 
+    #admin-btn {
+      position: absolute;
+      top: 98px;
+      right: 10px;
+      background: rgba(0,0,0,0.35);
+      border: none;
+      color: #fff;
+      border-radius: 20px;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 10;
+      opacity: 0.6;
+    }
+    #admin-btn:hover { opacity: 1; }
+
     /* ── Shop overlay ───────────────────────────────────────────────────── */
     #shop-overlay {
       position: fixed;
@@ -705,6 +721,7 @@
   <button id="pause-btn" onclick="togglePause()">⏸ השהה</button>
   <button id="shop-btn" onclick="openShop()">🛍️ חנות</button>
   <button id="top-btn" onclick="openLeaderboard()">🏆 טופ</button>
+  <button id="admin-btn" onclick="openAdmin()">🔑</button>
 
   <div id="overlay">
     <div id="message-box">
@@ -1748,6 +1765,25 @@ function saveShop() {
   }
   console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
   return Promise.resolve(false);
+}
+
+// ── Admin mode ────────────────────────────────────────────────────────────────
+// Entering the admin code grants a big coin balance and unlocks every skin.
+const ADMIN_CODE = '5151';
+function openAdmin() {
+  const code = prompt('קוד אדמין:');
+  if (code === null) return;
+  if (code.trim() !== ADMIN_CODE) { alert('קוד שגוי'); return; }
+  shopData.coins = Math.max(shopData.coins, 99999);
+  shopData.ownedSkins = SKINS.map(s => s.id);
+  shopData.ownedBurgerSkins = BURGER_SKINS.map(s => s.id);
+  shopData.ownedPizzaSkins = PIZZA_SKINS.map(s => s.id);
+  shopData.ownedSaladSkins = SALAD_SKINS.map(s => s.id);
+  coinsEl.textContent = shopData.coins;
+  const sc = document.getElementById('shop-coins-val');
+  if (sc) sc.textContent = shopData.coins;
+  saveShop();
+  alert('מצב אדמין הופעל: 99,999 מטבעות וכל הסקינים נפתחו');
 }
 
 function addCoins(n) {
