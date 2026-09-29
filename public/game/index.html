@@ -793,13 +793,36 @@
 const API_BASE = (window.THINKFAST_API_BASE || '').replace(/\/$/, '');
 const API_CLIENT = window.THINKFAST_CLIENT || 'web';
 
+// Safari (esp. iPhone / private mode / home-screen app) can throw on localStorage
+// access or wipe it, and old iOS lacks crypto.randomUUID. Never let either break
+// saving: wrap storage in try/catch, mirror the player id into a cookie, and fall
+// back to a manual UUID.
+function safeStorageGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function safeStorageSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function readIdCookie() {
+  const m = document.cookie.match(/(?:^|; )thinkFastPlayerId=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function writeIdCookie(id) {
+  try { document.cookie = 'thinkFastPlayerId=' + encodeURIComponent(id) + '; max-age=63072000; path=/; SameSite=Lax'; } catch (e) {}
+}
+function makeUuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+let _memPlayerId = null;
 function getPlayerId() {
-  let id = localStorage.getItem('thinkFastPlayerId');
+  let id = _memPlayerId || safeStorageGet('thinkFastPlayerId') || readIdCookie();
   if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('thinkFastPlayerId', id);
+    id = makeUuid();
     console.log('[API] נוצר player_id חדש:', id);
   }
+  _memPlayerId = id;
+  safeStorageSet('thinkFastPlayerId', id);
+  writeIdCookie(id);
   return id;
 }
 
@@ -813,6 +836,7 @@ async function apiGetProgress() {
     const res = await fetch(`${API_BASE}/api/v1/progress`, {
       method: 'GET',
       headers: apiHeaders(),
+      cache: 'no-store',
     });
     if (!res.ok) {
       console.error('[API] שגיאה בטעינה:', res.status);
@@ -895,7 +919,7 @@ window._apiReady = false;
 // against GET /progress, as before). localStorage stays as the offline cache.
 apiGetProgress().then(remote => {
   if (remote) {
-    const local = JSON.parse(localStorage.getItem('thinkFastShop') || 'null');
+    const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
     if (!local || remote.coins >= local.coins) {
       console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
       Object.assign(window._pendingShopData || {}, remote);
@@ -1629,7 +1653,7 @@ const SALAD_SKINS = [
   { id: 'candy_s',         name: 'סוקריה',       price: 44,  tier: 2, requireOwned: 2, emoji: '🍭' },
 ];
 
-let shopData = JSON.parse(localStorage.getItem('thinkFastShop') || 'null') || {
+let shopData = JSON.parse(safeStorageGet('thinkFastShop') || 'null') || {
   coins: 0,
   ownedSkins: ['classic'],
   activeSkin: 'classic',
@@ -1656,8 +1680,10 @@ if (window._remoteShopData) {
 // iPhone Safari where localStorage is also cleared aggressively) — apply it late.
 window._applyRemoteShop = function(remote) {
   Object.assign(shopData, remote);
-  localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  safeStorageSet('thinkFastShop', JSON.stringify(shopData));
   if (typeof coinsEl !== 'undefined') coinsEl.textContent = shopData.coins;
+  const sc = document.getElementById('shop-coins-val');
+  if (sc) sc.textContent = shopData.coins;
 };
 
 // Migrate old saves that lack burger skin fields
@@ -1676,7 +1702,7 @@ if (!shopData.saladPurchaseCount) shopData.saladPurchaseCount = 0;
 function saveShop() {
   // localStorage stays as the offline cache so the game still plays if the API
   // is down; the API is the source of truth when reachable.
-  localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  safeStorageSet('thinkFastShop', JSON.stringify(shopData));
   if (window._apiSaveProgress) {
     return window._apiSaveProgress(shopData);
   }
@@ -6052,7 +6078,7 @@ function flushOnExit() {
   _exitFlushed = true;
 
   // 1. Persist the latest progress (coins + all skins).
-  localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  safeStorageSet('thinkFastShop', JSON.stringify(shopData));
   if (window._apiSaveProgress) {
     window._apiSaveProgress(shopData, { keepalive: true });
   }
