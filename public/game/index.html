@@ -165,71 +165,6 @@
     }
     #top-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
 
-    #me-btn {
-      position: absolute;
-      top: 98px;
-      right: 10px;
-      background: linear-gradient(135deg, #3498db, #2472a4);
-      border: none;
-      color: #fff;
-      border-radius: 20px;
-      padding: 7px 14px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 10;
-      transition: transform 0.1s, filter 0.1s;
-      box-shadow: 0 2px 8px rgba(52,152,219,0.4);
-    }
-    #me-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
-
-    /* ── "My player" link modal ─────────────────────────────────────────── */
-    #me-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: fadein 0.2s ease;
-    }
-    #me-panel {
-      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-      border: 2px solid rgba(52,152,219,0.4);
-      border-radius: 24px;
-      padding: 20px;
-      width: min(92vw, 400px);
-      color: #fff;
-      direction: rtl;
-      text-align: center;
-    }
-    #me-panel h2 { margin: 0 0 8px; }
-    #me-panel p { margin: 6px 0 12px; font-size: 0.9rem; opacity: 0.85; }
-    #me-link-input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 8px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.3);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      direction: ltr;
-      font-size: 0.8rem;
-    }
-    .me-actions { display: flex; gap: 8px; margin-top: 12px; }
-    .me-actions button {
-      flex: 1;
-      border: none;
-      border-radius: 14px;
-      padding: 9px;
-      font-weight: bold;
-      cursor: pointer;
-      background: #3498db;
-      color: #fff;
-    }
-    #me-close-btn { background: rgba(255,255,255,0.15) !important; }
-
     /* ── In-app browser warning ─────────────────────────────────────────── */
     #inapp-banner {
       position: fixed;
@@ -791,7 +726,6 @@
   <button id="pause-btn" onclick="togglePause()">⏸ השהה</button>
   <button id="shop-btn" onclick="openShop()">🛍️ חנות</button>
   <button id="top-btn" onclick="openLeaderboard()">🏆 טופ</button>
-  <button id="me-btn" onclick="openMe()">👤 השחקן שלי</button>
 
   <div id="overlay">
     <div id="message-box">
@@ -803,20 +737,6 @@
 </div>
 
 <p id="instructions">🖱️ הזז את העכבר / 👆 גרור את האצבע כדי להזיז את הסל!</p>
-
-<!-- My player (personal link) Modal -->
-<div id="me-overlay" style="display:none;" onclick="handleMeOverlayClick(event)">
-  <div id="me-panel">
-    <h2>👤 השחקן שלי</h2>
-    <p>שמור את הקישור הזה (או הוסף אותו למסך הבית). כך תוכל לחזור למטבעות ולסקינים שלך גם אם הדפדפן ימחק נתונים או שתעבור למכשיר אחר.<br>⚠️ מי שיש לו את הקישור משחק בתור אותו שחקן.</p>
-    <input id="me-link-input" type="text" readonly onclick="this.select()">
-    <div class="me-actions">
-      <button onclick="copyMeLink()" id="me-copy-btn">📋 העתק</button>
-      <button onclick="shareMeLink()" id="me-share-btn">📤 שתף</button>
-      <button onclick="closeMe()" id="me-close-btn">✕ סגור</button>
-    </div>
-  </div>
-</div>
 
 <!-- Shop Modal -->
 <div id="shop-overlay" style="display:none;" onclick="handleShopOverlayClick(event)">
@@ -3870,59 +3790,13 @@ function handleLeaderboardOverlayClick(e) {
   if (e.target === document.getElementById('leaderboard-overlay')) closeLeaderboard();
 }
 
-// ── Personal link ("השחקן שלי") ──────────────────────────────────────────────
-let mePausedGame = false;
-
+// ── Personal link (used by the in-app browser banner) ──────────────────────────────────────────────
 function personalLink() {
   const u = new URL(location.href);
   u.search = '';
   u.hash = '';
   u.searchParams.set('p', getPlayerId());
   return u.toString();
-}
-
-function openMe() {
-  if (running && !paused) {
-    togglePause();
-    mePausedGame = true;
-  }
-  const input = document.getElementById('me-link-input');
-  input.value = personalLink();
-  document.getElementById('me-share-btn').style.display = navigator.share ? '' : 'none';
-  document.getElementById('me-copy-btn').textContent = '📋 העתק';
-  document.getElementById('me-overlay').style.display = 'flex';
-}
-
-function closeMe() {
-  document.getElementById('me-overlay').style.display = 'none';
-  if (mePausedGame && paused) togglePause();
-  mePausedGame = false;
-}
-
-function handleMeOverlayClick(e) {
-  if (e.target === document.getElementById('me-overlay')) closeMe();
-}
-
-async function copyMeLink() {
-  const link = personalLink();
-  const btn = document.getElementById('me-copy-btn');
-  try {
-    await navigator.clipboard.writeText(link);
-  } catch (e) {
-    // Older iOS / insecure contexts: fall back to selecting the input.
-    const input = document.getElementById('me-link-input');
-    input.focus();
-    input.select();
-    input.setSelectionRange(0, link.length);
-    try { document.execCommand('copy'); } catch (e2) {}
-  }
-  btn.textContent = '✅ הועתק';
-}
-
-function shareMeLink() {
-  if (!navigator.share) return;
-  navigator.share({ title: 'המבורגר נופל!', text: 'הקישור האישי שלי למשחק', url: personalLink() })
-    .catch(() => {});
 }
 
 // ── In-app browser warning (WhatsApp / Instagram / Facebook ...) ─────────────
