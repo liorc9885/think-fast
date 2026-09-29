@@ -402,6 +402,19 @@
     }
     #leaderboard-close-btn:hover { background: rgba(255,255,255,0.25); }
 
+    #leaderboard-name-toggle {
+      display: block;
+      margin: 14px 20px 0;
+      width: calc(100% - 40px);
+      background: rgba(255,215,0,0.12);
+      border: 1px solid rgba(255,215,0,0.35);
+      color: #ffd700;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
     #leaderboard-name-form {
       display: flex;
       align-items: center;
@@ -753,7 +766,8 @@
       <h2>🏆 טבלת השיאים</h2>
       <button id="leaderboard-close-btn" onclick="closeLeaderboard()">✕</button>
     </div>
-    <div id="leaderboard-name-form">
+    <button id="leaderboard-name-toggle" onclick="toggleNameForm()">✏️ הכנס את שמך</button>
+    <div id="leaderboard-name-form" style="display:none;">
       <label for="leaderboard-name-input">השם שלך:</label>
       <input id="leaderboard-name-input" type="text" maxlength="24" placeholder="כל שם שתרצה...">
       <button id="leaderboard-name-save" onclick="saveDisplayName()">💾 שמור</button>
@@ -3654,12 +3668,26 @@ function setLeaderboardBoard(board) {
   startLeaderboardPolling();
 }
 
+function toggleNameForm(show) {
+  const form = document.getElementById('leaderboard-name-form');
+  const open = show === undefined ? form.style.display === 'none' : show;
+  form.style.display = open ? 'flex' : 'none';
+  if (open) document.getElementById('leaderboard-name-input').focus();
+}
+
+function updateNameToggleLabel() {
+  document.getElementById('leaderboard-name-toggle').textContent =
+    shopData.displayName ? '✏️ שנה שם' : '✏️ הכנס את שמך';
+}
+
 function openLeaderboard() {
   if (running && !paused) {
     togglePause();
     leaderboardPausedGame = true;
   }
   document.getElementById('leaderboard-name-input').value = shopData.displayName || '';
+  toggleNameForm(false);
+  updateNameToggleLabel();
   document.getElementById('leaderboard-overlay').style.display = 'flex';
   fetchLeaderboard();
   startLeaderboardPolling();
@@ -3691,6 +3719,8 @@ async function saveDisplayName() {
     // otherwise the refresh races the save and shows the old list.
     const ok = await saveShop();
     showToast(ok ? '✅ השם נשמר!' : '⚠️ השם נשמר מקומית בלבד — נסה שוב');
+    updateNameToggleLabel();
+    if (ok) toggleNameForm(false);
     await fetchLeaderboard();
     startLeaderboardPolling(); // restart the 5s cycle from now
   } finally {
@@ -3737,8 +3767,8 @@ function renderLeaderboard(entries, me) {
   // Pin the player's own saved name at the top so it shows right after saving.
   const meRow = me ? `
     <div class="leaderboard-row leaderboard-me">
-      <span class="leaderboard-rank">👤</span>
-      <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה)</span>
+      <span class="leaderboard-rank">${me.rank ? '#' + me.rank : '👤'}</span>
+      <span class="leaderboard-name">${escapeHtml(me.displayName)} (אתה${me.rank ? ' — מקום ' + me.rank : ''})</span>
       <span class="leaderboard-score">${LEADERBOARD_ICONS[leaderboardBoard]} ${me.score}</span>
     </div>` : '';
   if (!entries.length) {

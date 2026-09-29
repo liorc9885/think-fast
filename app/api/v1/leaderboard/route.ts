@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const named = () =>
     supabase
       .from('player_progress')
-      .select(cols)
+      .select(cols, { count: 'exact' })
       .not('display_name', 'is', null)
       .neq('display_name', '')
       .neq('display_name', 'אנונימי');
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 
   // Optional X-Player-Id: also return the caller's own saved name/score so the
   // client can pin it at the top even before they have a score on the board.
-  let me: { displayName: string; score: number } | null = null;
+  let me: { displayName: string; score: number; rank: number | null } | null = null;
   const playerId = getPlayerId(req);
   if (playerId) {
     const { data: mine } = await supabase
@@ -85,7 +85,18 @@ export async function GET(req: NextRequest) {
       .eq('player_id', playerId)
       .maybeSingle();
     if (mine?.display_name && mine.display_name !== 'אנונימי') {
-      me = { displayName: mine.display_name, score: valueOf(mine, board as Board) };
+      const score = valueOf(mine, board as Board);
+      let rank: number | null = null;
+      if (score > 0) {
+        if (board === 'items') {
+          rank = (data || []).filter((row) => valueOf(row, 'items') > score).length + 1;
+        } else {
+          const col = board === 'coins' ? 'coins' : 'high_score';
+          const { count } = await named().gt(col, score);
+          rank = (count ?? 0) + 1;
+        }
+      }
+      me = { displayName: mine.display_name, score, rank };
     }
   }
 
