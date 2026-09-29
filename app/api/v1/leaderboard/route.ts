@@ -10,7 +10,8 @@ export function OPTIONS(req: NextRequest) {
   return preflight(req.headers.get('origin'));
 }
 
-// GET /api/v1/leaderboard — top players by high_score. Public (no player id
+// GET /api/v1/leaderboard — top players by high_score (named players only;
+// anonymous entries are excluded). Public (no player id
 // required); the response only exposes display_name + high_score, never the
 // player id.
 export async function GET(req: NextRequest) {
@@ -30,6 +31,9 @@ export async function GET(req: NextRequest) {
     .from('player_progress')
     .select('display_name, high_score')
     .gt('high_score', 0)
+    .not('display_name', 'is', null)
+    .neq('display_name', '')
+    .neq('display_name', 'אנונימי')
     .order('high_score', { ascending: false })
     .limit(limit);
 
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   const entries = (data || []).map((row, i) => ({
     rank: i + 1,
-    displayName: row.display_name || 'אנונימי',
+    displayName: row.display_name,
     score: row.high_score,
   }));
 
