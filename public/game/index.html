@@ -1768,13 +1768,17 @@ function saveShop() {
 }
 
 // ── Admin mode ────────────────────────────────────────────────────────────────
-// Entering the admin code grants a big coin balance and unlocks every skin.
+// Entering the admin code lets you set any coin balance and unlocks every skin.
 const ADMIN_CODE = '5151';
 function openAdmin() {
   const code = prompt('קוד אדמין:');
   if (code === null) return;
   if (code.trim() !== ADMIN_CODE) { alert('קוד שגוי'); return; }
-  shopData.coins = Math.max(shopData.coins, 99999);
+  const amountStr = prompt('כמה מטבעות? (0 עד 1,000,000,000)', String(shopData.coins));
+  if (amountStr === null) return;
+  const amount = Math.floor(Number(amountStr.replace(/,/g, '').trim()));
+  if (!Number.isFinite(amount) || amount < 0 || amount > 1000000000) { alert('סכום לא תקין'); return; }
+  shopData.coins = amount;
   shopData.ownedSkins = SKINS.map(s => s.id);
   shopData.ownedBurgerSkins = BURGER_SKINS.map(s => s.id);
   shopData.ownedPizzaSkins = PIZZA_SKINS.map(s => s.id);
@@ -1783,7 +1787,7 @@ function openAdmin() {
   const sc = document.getElementById('shop-coins-val');
   if (sc) sc.textContent = shopData.coins;
   saveShop();
-  alert('מצב אדמין הופעל: 99,999 מטבעות וכל הסקינים נפתחו');
+  alert('מצב אדמין הופעל: ' + amount.toLocaleString() + ' מטבעות וכל הסקינים נפתחו');
 }
 
 function addCoins(n) {
