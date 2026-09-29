@@ -26,6 +26,18 @@
       letter-spacing: 2px;
     }
 
+    #bonus-banner {
+      background: linear-gradient(90deg, #f39c12, #e74c3c);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+
     #hud {
       display: flex;
       gap: 20px;
@@ -643,6 +655,8 @@
   <span>⚡ רמה: <b id="level-display">1</b></span>
   <span id="coins-hud">🪙 מטבעות: <b id="coins-display">0</b></span>
 </div>
+
+<div id="bonus-banner" style="display:none;">🔥 אירוע כפול נקודות! 🔥</div>
 
 <div id="game-container" style="position:relative;">
   <canvas id="gameCanvas" width="480" height="560"></canvas>
@@ -5540,6 +5554,25 @@ function drawPizza(c, x, y, size, skinId) {
   c.restore();
 }
 
+// ── Hourly double-points event (first 10 minutes of every hour) ──────────────
+const BONUS_EVENT_MINUTES = 10;
+function isBonusEvent() {
+  return new Date().getMinutes() < BONUS_EVENT_MINUTES;
+}
+function pointsMult() {
+  return isBonusEvent() ? 2 : 1;
+}
+function updateBonusBanner() {
+  const el = document.getElementById('bonus-banner');
+  if (!el) return;
+  const on = isBonusEvent();
+  el.style.display = on ? 'block' : 'none';
+  if (on) {
+    const left = BONUS_EVENT_MINUTES - 1 - new Date().getMinutes();
+    el.textContent = `🔥 אירוע כפול נקודות! עוד ${left + 1} דק׳ 🔥`;
+  }
+}
+
 // ── Level up ──────────────────────────────────────────────────────────────────
 function checkLevel() {
   const newLevel = Math.floor(score / 10) + 1;
@@ -5553,6 +5586,7 @@ function checkLevel() {
 // ── Main loop ─────────────────────────────────────────────────────────────────
 function update() {
   frameCount++;
+  if (frameCount % 30 === 1) updateBonusBanner();
   if (keys['ArrowLeft'])  basketX = clampBasket(basketX - 8);
   if (keys['ArrowRight']) basketX = clampBasket(basketX + 8);
   updateClouds();
@@ -5586,12 +5620,13 @@ function update() {
 
     if (b.y + b.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(b.x - basketX) < BASKET_W / 2 + b.size * 0.3) {
-        score++;
+        const m = pointsMult();
+        score += m;
         burgersCaught++;
         scoreEl.textContent = score;
-        addCoins(1);
+        addCoins(m);
         spawnParticles(b.x, BASKET_Y - BASKET_H / 2);
-        spawnFloatingText(b.x, BASKET_Y - BASKET_H / 2 - 20, '🍔 המבורגר! +1');
+        spawnFloatingText(b.x, BASKET_Y - BASKET_H / 2 - 20, `🍔 המבורגר! +${m}`);
         checkLevel();
         return false;
       } else if (b.y - b.size > H) {
@@ -5613,12 +5648,13 @@ function update() {
 
     if (p.y + p.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(p.x - basketX) < BASKET_W / 2 + p.size * 0.3) {
-        score += 2;
+        const m = pointsMult() * 2;
+        score += m;
         pizzasCaught++;
         scoreEl.textContent = score;
-        addCoins(2);
+        addCoins(m);
         spawnParticles(p.x, BASKET_Y - BASKET_H / 2);
-        spawnFloatingText(p.x, BASKET_Y - BASKET_H / 2 - 20, '🍕 פיצה! +2');
+        spawnFloatingText(p.x, BASKET_Y - BASKET_H / 2 - 20, `🍕 פיצה! +${m}`);
         checkLevel();
         return false;
       } else if (p.y - p.size > H) {
@@ -5640,12 +5676,13 @@ function update() {
 
     if (s.y + s.size * 0.5 >= BASKET_Y - BASKET_H / 2) {
       if (Math.abs(s.x - basketX) < BASKET_W / 2 + s.size * 0.3) {
-        score += 3;
+        const m = pointsMult() * 3;
+        score += m;
         saladsCaught++;
         scoreEl.textContent = score;
-        addCoins(3);
+        addCoins(m);
         spawnParticles(s.x, BASKET_Y - BASKET_H / 2);
-        spawnFloatingText(s.x, BASKET_Y - BASKET_H / 2 - 20, '🥗 סלט! +3');
+        spawnFloatingText(s.x, BASKET_Y - BASKET_H / 2 - 20, `🥗 סלט! +${m}`);
         checkLevel();
         return false;
       } else if (s.y - s.size > H) {
