@@ -900,6 +900,7 @@ apiGetProgress().then(remote => {
       console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
       Object.assign(window._pendingShopData || {}, remote);
       window._remoteShopData = remote;
+      if (window._applyRemoteShop) window._applyRemoteShop(remote);
     } else {
       console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
       apiSaveProgress(local);
@@ -1650,6 +1651,14 @@ if (window._remoteShopData) {
   Object.assign(shopData, window._remoteShopData);
   console.log('[Shop] הוחלו נתוני ענן על shopData');
 }
+
+// Remote progress can arrive after this script ran (slow mobile networks, e.g.
+// iPhone Safari where localStorage is also cleared aggressively) — apply it late.
+window._applyRemoteShop = function(remote) {
+  Object.assign(shopData, remote);
+  localStorage.setItem('thinkFastShop', JSON.stringify(shopData));
+  if (typeof coinsEl !== 'undefined') coinsEl.textContent = shopData.coins;
+};
 
 // Migrate old saves that lack burger skin fields
 if (!shopData.ownedBurgerSkins) shopData.ownedBurgerSkins = ['classic'];
@@ -5722,7 +5731,7 @@ function updateFrenzy() {
 }
 function drawFrenzyBackground() {
   const f = frenzyAmount();
-  if (!f) return;
+  if (!f || !running || paused) return;
   const t = frameCount;
   ctx.save();
   // colour wash cycling through the rainbow
@@ -5981,6 +5990,8 @@ function gameOver() {
   running = false;
   paused = false;
   cancelAnimationFrame(animId);
+  frenzyLights = [];
+  draw();
   pauseBtn.style.display = 'none';
   pauseBtn.textContent = '⏸ השהה';
 
@@ -6067,6 +6078,7 @@ function flushOnExit() {
 // switch / tab close); `pagehide` covers desktop navigation and bfcache.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
+    if (running && !paused) togglePause();
     flushOnExit();
   } else {
     // Returned to the game — re-arm so the next exit flushes again.
