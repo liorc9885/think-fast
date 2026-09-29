@@ -691,7 +691,7 @@
 <h1>🍔 המבורגר נופל! 🍔</h1>
 
 <div id="hud">
-  <span>⭐ תפוס: <b id="score-display">0</b></span>
+  <span>⭐ <span id="hud-name">סי</span>: <b id="score-display">0</b></span>
   <span>❤️ חיים: <b id="lives-display">3</b></span>
   <span>⚡ רמה: <b id="level-display">1</b></span>
   <span id="coins-hud">🪙 מטבעות: <b id="coins-display">0</b></span>
@@ -1722,9 +1722,12 @@ window._applyRemoteShop = function(remote) {
   Object.assign(shopData, remote);
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
   if (typeof coinsEl !== 'undefined') coinsEl.textContent = shopData.coins;
+  updateHudName();
   const sc = document.getElementById('shop-coins-val');
   if (sc) sc.textContent = shopData.coins;
 };
+
+updateHudName();
 
 // Migrate old saves that lack burger skin fields
 if (!shopData.ownedBurgerSkins) shopData.ownedBurgerSkins = ['classic'];
@@ -3750,7 +3753,14 @@ function toggleNameForm(show) {
   if (open) document.getElementById('leaderboard-name-input').focus();
 }
 
+// HUD label next to the star: the player's saved name, "סי" until they set one.
+function updateHudName() {
+  const el = document.getElementById('hud-name');
+  if (el) el.textContent = shopData.displayName || 'סי';
+}
+
 function updateNameToggleLabel() {
+  updateHudName();
   document.getElementById('leaderboard-name-toggle').textContent =
     shopData.displayName ? '✏️ השם שלך: ' + shopData.displayName : '✏️ הכנס את שמך';
 }
