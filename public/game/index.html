@@ -165,6 +165,27 @@
     }
     #top-btn:hover { transform: scale(1.07); filter: brightness(1.1); }
 
+    /* ── In-app browser warning ─────────────────────────────────────────── */
+    #inapp-banner {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 120;
+      background: #c0392b;
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      direction: rtl;
+      text-align: center;
+    }
+    #inapp-banner button {
+      margin: 6px 4px 0;
+      border: none;
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
     /* ── Shop overlay ───────────────────────────────────────────────────── */
     #shop-overlay {
       position: fixed;
@@ -813,18 +834,46 @@ function makeUuid() {
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
   });
 }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function readIdFromUrl() {
+  try {
+    const p = new URLSearchParams(location.search).get('p');
+    return p && UUID_RE.test(p) ? p.toLowerCase() : null;
+  } catch (e) { return null; }
+}
+// Keep the id in the address bar too, so a bookmark / home-screen icon / shared
+// link carries the identity even if Safari wipes localStorage and cookies.
+function writeIdToUrl(id) {
+  try {
+    const u = new URL(location.href);
+    if (u.searchParams.get('p') === id) return;
+    u.searchParams.set('p', id);
+    history.replaceState(null, '', u.toString());
+  } catch (e) {}
+}
 let _memPlayerId = null;
 function getPlayerId() {
-  let id = _memPlayerId || safeStorageGet('thinkFastPlayerId') || readIdCookie();
+  if (_memPlayerId) return _memPlayerId;
+  const urlId = readIdFromUrl();
+  const storedId = safeStorageGet('thinkFastPlayerId') || readIdCookie();
+  let id = urlId || storedId;
   if (!id) {
     id = makeUuid();
     console.log('[API] נוצר player_id חדש:', id);
   }
+  // A personal link for a different player was opened on this device: the
+  // cached local shop data belongs to the old id, so drop it (otherwise the
+  // "higher coins wins" merge could push it into the new player's account).
+  if (urlId && storedId && storedId.toLowerCase() !== urlId) {
+    try { localStorage.removeItem('thinkFastShop'); } catch (e) {}
+  }
   _memPlayerId = id;
   safeStorageSet('thinkFastPlayerId', id);
   writeIdCookie(id);
+  writeIdToUrl(id);
   return id;
 }
+getPlayerId(); // resolve identity before anything reads the local shop cache
 
 function apiHeaders() {
   return { 'Content-Type': 'application/json', 'X-Player-Id': getPlayerId() };
@@ -3740,6 +3789,40 @@ function closeLeaderboard() {
 function handleLeaderboardOverlayClick(e) {
   if (e.target === document.getElementById('leaderboard-overlay')) closeLeaderboard();
 }
+
+// ── Personal link (used by the in-app browser banner) ──────────────────────────────────────────────
+function personalLink() {
+  const u = new URL(location.href);
+  u.search = '';
+  u.hash = '';
+  u.searchParams.set('p', getPlayerId());
+  return u.toString();
+}
+
+// ── In-app browser warning (WhatsApp / Instagram / Facebook ...) ─────────────
+// These embedded browsers often don't keep storage between opens. The personal
+// link in the address bar covers most of it, but a nudge to open the real
+// browser is the safest fix.
+(function showInAppBanner() {
+  const ua = navigator.userAgent || '';
+  const inApp = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Telegram|Snapchat|TikTok|musical_ly|Twitter|LinkedInApp/i.test(ua);
+  if (!inApp) return;
+  try { if (sessionStorage.getItem('thinkFastInAppDismissed')) return; } catch (e) {}
+  const el = document.createElement('div');
+  el.id = 'inapp-banner';
+  el.innerHTML = '⚠️ נפתחת בתוך אפליקציה, וההתקדמות שלך עלולה להימחק.<br>' +
+    'העתק את הקישור ופתח אותו ב-Safari / Chrome.<br>' +
+    '<button id="inapp-copy">📋 העתק קישור</button><button id="inapp-close">✕</button>';
+  document.body.appendChild(el);
+  document.getElementById('inapp-copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(personalLink()); } catch (e) {}
+    document.getElementById('inapp-copy').textContent = '✅ הועתק';
+  };
+  document.getElementById('inapp-close').onclick = () => {
+    try { sessionStorage.setItem('thinkFastInAppDismissed', '1'); } catch (e) {}
+    el.remove();
+  };
+})();
 
 // Any player can type any name they like — there's no signup/verification step,
 // the box is just a free-text label attached to their (anonymous) player id.
