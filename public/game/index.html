@@ -966,22 +966,33 @@ window._apiReady = false;
 
 // Load-on-start + the local-vs-remote "higher coins wins" merge (kept client-side
 // against GET /progress, as before). localStorage stays as the offline cache.
-apiGetProgress().then(remote => {
-  if (remote) {
-    const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
-    if (!local || remote.coins >= local.coins) {
-      console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
-      Object.assign(window._pendingShopData || {}, remote);
-      window._remoteShopData = remote;
-      if (window._applyRemoteShop) window._applyRemoteShop(remote);
+// Until the server copy has been read successfully, never PUT progress: the page
+// starts with default (0 coins) data, and an early save (e.g. the exit flush when
+// the player leaves right after opening) would overwrite their real progress.
+window._remoteLoaded = false;
+function loadRemoteProgress() {
+  return apiGetProgress().then(remote => {
+    if (remote) {
+      window._remoteLoaded = true;
+      const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
+      if (!local || remote.coins >= local.coins) {
+        console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
+        Object.assign(window._pendingShopData || {}, remote);
+        window._remoteShopData = remote;
+        if (window._applyRemoteShop) window._applyRemoteShop(remote);
+      } else {
+        console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
+        apiSaveProgress(local);
+      }
     } else {
-      console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
-      apiSaveProgress(local);
+      // Server unreachable: keep playing from the local cache and retry.
+      setTimeout(loadRemoteProgress, 5000);
     }
-  }
-  window._apiReady = true;
-  console.log('[API] אתחול הושלם');
-});
+    window._apiReady = true;
+    console.log('[API] אתחול הושלם');
+  });
+}
+loadRemoteProgress();
 </script>
 
 <script>
@@ -1752,7 +1763,7 @@ function saveShop() {
   // localStorage stays as the offline cache so the game still plays if the API
   // is down; the API is the source of truth when reachable.
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress) {
+  if (window._apiSaveProgress && window._remoteLoaded) {
     return window._apiSaveProgress(shopData);
   }
   console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
@@ -6162,7 +6173,7 @@ function flushOnExit() {
 
   // 1. Persist the latest progress (coins + all skins).
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress) {
+  if (window._apiSaveProgress && window._remoteLoaded) {
     window._apiSaveProgress(shopData, { keepalive: true });
   }
 
