@@ -3681,7 +3681,7 @@ async function fetchLeaderboard(silent = false) {
   const list = document.getElementById('leaderboard-list');
   if (!silent) list.innerHTML = '<div class="leaderboard-empty">טוען...</div>';
   try {
-    const res = await fetch(`${API_BASE}/api/v1/leaderboard`, {
+    const res = await fetch(`${API_BASE}/api/v1/leaderboard?limit=100`, {
       headers: { 'X-Player-Id': getPlayerId() },
     });
     if (!res.ok) throw new Error('bad status ' + res.status);
