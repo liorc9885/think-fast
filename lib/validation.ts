@@ -137,7 +137,7 @@ export function sessionToRow(playerId: string, s: SessionInput) {
 // ── Activity event (activity_events row) ──────────────────────────────────────
 export const activitySchema = z.object({
   eventType: z.string().min(1).max(64),
-  payload: z.record(z.unknown()).default({}),
+  payload: z.record(z.string(), z.unknown()).default({}),
   client: clientSchema.optional(),
 });
 
