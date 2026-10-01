@@ -32,6 +32,11 @@ function resolveAllowOrigin(origin: string | null): string | null {
   return null;
 }
 
+// True when a request carrying this Origin may use the API cross-origin.
+export function isOriginAllowed(origin: string): boolean {
+  return resolveAllowOrigin(origin) !== null;
+}
+
 export function corsHeaders(origin: string | null): Record<string, string> {
   const allow = resolveAllowOrigin(origin);
   const headers: Record<string, string> = {
