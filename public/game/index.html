@@ -5210,6 +5210,7 @@ function drawBurger(c, x, y, size, highlight, skinId) {
 
 // ── Particle system ───────────────────────────────────────────────────────────
 function spawnParticles(x, y) {
+  triggerFrenzyPulse(0.7);
   const colors = ['#e8a020','#3cb043','#f5c518','#7b3f00','#ff6b6b'];
   for (let i = 0; i < 18; i++) {
     const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.3;
@@ -5886,19 +5887,25 @@ function checkLevel() {
     level = newLevel;
     levelEl.textContent = level;
     spawnInterval = Math.max(30, 90 - (level - 1) * 8);
+    triggerFrenzyPulse(1);
   }
 }
 
-// ── Frenzy mode: from level 5 the game goes wild with beautiful lights ───────
+// ── Frenzy mode: from level 5 the lights flare up only on events (catch / level-up) ──
 const FRENZY_LEVEL = 5;
 let frenzyLights = [];
+let frenzyPulse = 0; // 0..1, set by triggerFrenzyPulse() and fades out on its own
 function frenzyAmount() {
   return level >= FRENZY_LEVEL ? Math.min(1, 0.35 + (level - FRENZY_LEVEL) * 0.13) : 0;
 }
+function triggerFrenzyPulse(strength) {
+  if (frenzyAmount()) frenzyPulse = Math.max(frenzyPulse, strength);
+}
 function updateFrenzy() {
   const f = frenzyAmount();
+  frenzyPulse = f ? Math.max(0, frenzyPulse - 0.02) : 0;
   if (!f) { frenzyLights = []; return; }
-  if (frenzyLights.length < 40 * f && Math.random() < 0.5) {
+  if (frenzyPulse > 0 && frenzyLights.length < 40 * f && Math.random() < 0.5) {
     frenzyLights.push({
       x: Math.random() * W, y: Math.random() * H,
       r: 3 + Math.random() * 6, hue: Math.random() * 360,
@@ -5908,8 +5915,8 @@ function updateFrenzy() {
   frenzyLights = frenzyLights.filter(l => (l.life -= l.decay) > 0);
 }
 function drawFrenzyBackground() {
-  const f = frenzyAmount();
-  if (!f || !running || paused) return;
+  const f = frenzyAmount() * frenzyPulse;
+  if (f <= 0.01 || !running || paused) return;
   const t = frameCount;
   ctx.save();
   // colour wash cycling through the rainbow
@@ -5943,6 +5950,7 @@ function drawFrenzyBackground() {
     ctx.fill();
   }
   // twinkling glowing orbs
+  ctx.globalAlpha = frenzyPulse;
   frenzyLights.forEach(l => {
     const rg = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * 4);
     rg.addColorStop(0, `hsla(${l.hue},100%,80%,${l.life})`);
@@ -6168,7 +6176,7 @@ function gameOver() {
   running = false;
   paused = false;
   cancelAnimationFrame(animId);
-  frenzyLights = [];
+  frenzyLights = []; frenzyPulse = 0;
   draw();
   pauseBtn.style.display = 'none';
   pauseBtn.textContent = '⏸ השהה';
@@ -6198,7 +6206,7 @@ function gameOver() {
 }
 
 window.startGame = function() {
-  score = 0; lives = 3; level = 1; missCount = 0; frenzyLights = [];
+  score = 0; lives = 3; level = 1; missCount = 0; frenzyLights = []; frenzyPulse = 0;
   burgersCaught = 0; pizzasCaught = 0; saladsCaught = 0;
   coinsEarnedThisRun = 0; runStartTime = Date.now();
   spawnTimer = 0; spawnInterval = 90; frameCount = 0;
