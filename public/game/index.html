@@ -5889,11 +5889,10 @@ function checkLevel() {
   }
 }
 
-// ── Frenzy mode: from level 5 the game goes wild with beautiful lights ───────
-const FRENZY_LEVEL = 5;
+// ── Frenzy mode: beautiful lights only during the hourly 10-minute event ─────
 let frenzyLights = [];
 function frenzyAmount() {
-  return level >= FRENZY_LEVEL ? Math.min(1, 0.35 + (level - FRENZY_LEVEL) * 0.13) : 0;
+  return isBonusEvent() ? 1 : 0;
 }
 function updateFrenzy() {
   const f = frenzyAmount();
