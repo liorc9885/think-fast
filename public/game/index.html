@@ -799,6 +799,19 @@ const API_CLIENT = window.THINKFAST_CLIENT || 'web';
 // back to a manual UUID.
 function safeStorageGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function safeStorageSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function safeStorageRemove(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+// "Dirty" = the local shop cache holds changes the server hasn't confirmed yet
+// (e.g. a purchase whose save was cut off when iOS suspended the page). Kept in
+// memory for this session and mirrored to storage so the next launch knows the
+// local copy must win over the server's.
+const SHOP_DIRTY_KEY = 'thinkFastShopDirty';
+let _shopDirty = safeStorageGet(SHOP_DIRTY_KEY) === '1';
+function setShopDirty(dirty) {
+  _shopDirty = dirty;
+  if (dirty) safeStorageSet(SHOP_DIRTY_KEY, '1');
+  else safeStorageRemove(SHOP_DIRTY_KEY);
+}
 function readIdCookie() {
   const m = document.cookie.match(/(?:^|; )thinkFastPlayerId=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : null;
@@ -837,19 +850,22 @@ function getPlayerId() {
   const storedId = safeStorageGet('thinkFastPlayerId') || readIdCookie();
   let id = urlId || storedId;
   if (!id) {
-    window._freshIdentity = true; // no id in URL/storage/cookie: first visit, or storage was wiped
     id = makeUuid();
     console.log('[API] נוצר player_id חדש:', id);
   }
   // A personal link for a different player was opened on this device: the
   // cached local shop data belongs to the old id, so drop it (otherwise the
-  // "higher coins wins" merge could push it into the new player's account).
+  // load merge could push unsaved local changes into the new player's account).
   if (urlId && storedId && storedId.toLowerCase() !== urlId) {
-    try { localStorage.removeItem('thinkFastShop'); } catch (e) {}
+    safeStorageRemove('thinkFastShop');
+    setShopDirty(false);
   }
   _memPlayerId = id;
   safeStorageSet('thinkFastPlayerId', id);
-  writeIdCookie(id);
+  // The API also sets this cookie from its responses, which Safari keeps far
+  // longer than script-written cookies (7-day ITP cap). Don't overwrite that
+  // copy with a script-written one unless the id actually changed.
+  if (readIdCookie() !== id) writeIdCookie(id);
   writeIdToUrl(id);
   return id;
 }
@@ -883,8 +899,8 @@ async function apiGetProgress() {
 // PUT /api/v1/progress → upsert progress. The server validates and sets updated_at.
 // Pass { keepalive: true } when saving during page exit so the browser doesn't
 // cancel the request mid-flight.
-async function apiSaveProgress(shopData, opts = {}) {
-  const payload = {
+function progressPayload(shopData) {
+  return {
     coins: shopData.coins,
     ownedSkins: shopData.ownedSkins,
     activeSkin: shopData.activeSkin,
@@ -900,11 +916,14 @@ async function apiSaveProgress(shopData, opts = {}) {
     saladPurchaseCount: shopData.saladPurchaseCount,
     displayName: shopData.displayName ?? null,
   };
+}
+
+async function apiSaveProgress(shopData, opts = {}) {
   try {
     const res = await fetch(`${API_BASE}/api/v1/progress`, {
       method: 'PUT',
       headers: apiHeaders(),
-      body: JSON.stringify(payload),
+      body: JSON.stringify(progressPayload(shopData)),
       keepalive: opts.keepalive === true,
     });
     if (!res.ok) {
@@ -917,6 +936,23 @@ async function apiSaveProgress(shopData, opts = {}) {
     console.error('[API] שמירה נכשלה (offline?):', e);
     return false;
   }
+}
+
+// POST /api/v1/progress via navigator.sendBeacon — used when the page is being
+// hidden/closed. iOS suspends the page almost immediately on app switch, and a
+// beacon is handed to the browser to deliver even after that, unlike fetch.
+// Beacons can't carry headers, so the player id goes in the body, and the body
+// is text/plain so it stays a CORS-simple request (Capacitor build). Falls back
+// to a keepalive PUT if the beacon isn't available or wasn't queued.
+function apiBeaconProgress(shopData) {
+  const body = JSON.stringify({ ...progressPayload(shopData), playerId: getPlayerId() });
+  try {
+    if (navigator.sendBeacon &&
+        navigator.sendBeacon(`${API_BASE}/api/v1/progress`, new Blob([body], { type: 'text/plain;charset=UTF-8' }))) {
+      return;
+    }
+  } catch (e) {}
+  apiSaveProgress(shopData, { keepalive: true });
 }
 
 // POST /api/v1/sessions → record a completed game (activity tracking).
@@ -941,29 +977,50 @@ async function apiPostSession(stats, opts = {}) {
 }
 
 window._apiSaveProgress = apiSaveProgress;
+window._apiBeaconProgress = apiBeaconProgress;
 window._apiPostSession = apiPostSession;
 window._apiReady = false;
 
-// Load-on-start + the local-vs-remote "higher coins wins" merge (kept client-side
-// against GET /progress, as before). localStorage stays as the offline cache.
+// Load-on-start + the local-vs-remote merge, against GET /progress.
+// localStorage stays as the offline cache.
 // Until the server copy has been read successfully, never PUT progress: the page
 // starts with default (0 coins) data, and an early save (e.g. the exit flush when
 // the player leaves right after opening) would overwrite their real progress.
+//
+// Merge rule: if the local cache has unconfirmed changes (dirty), it wins and is
+// pushed to the server; otherwise the server copy wins. Comparing coin totals
+// doesn't work — buying a skin lowers coins, so a purchase whose save was lost
+// would be reverted. Owned skins are unioned either way so none is ever lost.
+const OWNED_SKIN_KEYS = ['ownedSkins', 'ownedBurgerSkins', 'ownedPizzaSkins', 'ownedSaladSkins'];
+function mergeProgress(primary, other) {
+  const merged = { ...primary };
+  if (!other) return merged;
+  OWNED_SKIN_KEYS.forEach(k => {
+    const a = Array.isArray(primary[k]) ? primary[k] : [];
+    const b = Array.isArray(other[k]) ? other[k] : [];
+    merged[k] = a.concat(b.filter(id => !a.includes(id)));
+  });
+  return merged;
+}
 window._remoteLoaded = false;
 function loadRemoteProgress() {
   return apiGetProgress().then(remote => {
     if (remote) {
       window._remoteLoaded = true;
-      const local = JSON.parse(safeStorageGet('thinkFastShop') || 'null');
-      if (!local || remote.coins >= local.coins) {
-        console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
-        Object.assign(window._pendingShopData || {}, remote);
-        window._remoteShopData = remote;
-        if (window._applyRemoteShop) window._applyRemoteShop(remote);
+      // Prefer the live in-memory shop once the game script has run: storage
+      // can be unavailable on iPhone (private mode / in-app browsers).
+      const local = window._currentShop
+        ? window._currentShop()
+        : JSON.parse(safeStorageGet('thinkFastShop') || 'null');
+      if (local && _shopDirty) {
+        console.log('[API] יש שינויים מקומיים שלא נשמרו (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
+        window._remoteShopData = mergeProgress(local, remote);
+        window._remoteNeedsPush = true;
       } else {
-        console.log('[API] נתונים מקומיים חדשים יותר (מקומי:', local.coins, 'שרת:', remote.coins, ') — שומר מקומיים לשרת');
-        apiSaveProgress(local);
+        console.log('[API] משתמש בנתוני שרת (מטבעות:', remote.coins, ')');
+        window._remoteShopData = mergeProgress(remote, local);
       }
+      if (window._applyRemoteShop) window._applyRemoteShop();
     } else {
       // Server unreachable: keep playing from the local cache and retry.
       setTimeout(loadRemoteProgress, 5000);
@@ -1710,21 +1767,22 @@ let shopData = JSON.parse(safeStorageGet('thinkFastShop') || 'null') || {
   displayName: null,
 };
 
-// Apply remote data if loaded before this script ran
-if (window._remoteShopData) {
-  Object.assign(shopData, window._remoteShopData);
-  console.log('[Shop] הוחלו נתוני ענן על shopData');
-}
+window._currentShop = () => shopData;
 
-// Remote progress can arrive after this script ran (slow mobile networks, e.g.
-// iPhone Safari where localStorage is also cleared aggressively) — apply it late.
-window._applyRemoteShop = function(remote) {
-  Object.assign(shopData, remote);
+// Merged remote progress can arrive before or after this script runs (slow
+// mobile networks, e.g. iPhone Safari) — loadRemoteProgress calls this when it
+// lands, and it is also applied once below if it was already there.
+window._applyRemoteShop = function() {
+  Object.assign(shopData, window._remoteShopData);
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (typeof coinsEl !== 'undefined') coinsEl.textContent = shopData.coins;
+  coinsEl.textContent = shopData.coins;
   updateHudName();
   const sc = document.getElementById('shop-coins-val');
   if (sc) sc.textContent = shopData.coins;
+  if (window._remoteNeedsPush) {
+    window._remoteNeedsPush = false;
+    saveShop();
+  }
 };
 
 updateHudName();
@@ -1742,23 +1800,67 @@ if (!shopData.ownedSaladSkins) shopData.ownedSaladSkins = ['classic'];
 if (!shopData.activeSaladSkin) shopData.activeSaladSkin = 'classic';
 if (!shopData.saladPurchaseCount) shopData.saladPurchaseCount = 0;
 
-function saveShop() {
+// ── Save queue ────────────────────────────────────────────────────────────────
+// At most one PUT is in flight; saves requested meanwhile are coalesced into a
+// single follow-up PUT carrying the latest shopData. Firing a PUT per catch let
+// them land out of order on slow (mobile) networks — an older, lower coin total
+// could be written last — and could trip the API rate limit.
+const SAVE_DEBOUNCE_MS = 1000;
+let _saveTimer = null;
+let _saveInFlight = false;
+let _saveQueued = false;
+let _saveWaiters = [];
+let _saveSeq = 0;
+
+function _runSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
+  if (_saveInFlight) { _saveQueued = true; return; }
+  const waiters = _saveWaiters;
+  _saveWaiters = [];
+  const seq = _saveSeq;
+  _saveInFlight = true;
+  window._apiSaveProgress(shopData).then(ok => {
+    _saveInFlight = false;
+    // Only clear the flag if nothing changed since this PUT's data was taken.
+    if (ok && seq === _saveSeq) setShopDirty(false);
+    waiters.forEach(resolve => resolve(ok));
+    if (_saveQueued) { _saveQueued = false; _runSave(); }
+  });
+}
+
+// Persists shopData locally and queues a server save. Returns a promise that
+// resolves to whether a PUT including this change succeeded. Pass
+// { debounce: true } for frequent gameplay saves (coins per catch).
+function saveShop(opts = {}) {
   // localStorage stays as the offline cache so the game still plays if the API
   // is down; the API is the source of truth when reachable.
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress && window._remoteLoaded) {
-    return window._apiSaveProgress(shopData);
+  setShopDirty(true);
+  _saveSeq++;
+  if (!(window._apiSaveProgress && window._remoteLoaded)) {
+    console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
+    return Promise.resolve(false);
   }
-  console.warn('[Shop] ה-API לא מוכן עדיין — נשמר רק ב-localStorage');
-  return Promise.resolve(false);
+  return new Promise(resolve => {
+    _saveWaiters.push(resolve);
+    if (opts.debounce) {
+      if (!_saveTimer) _saveTimer = setTimeout(_runSave, SAVE_DEBOUNCE_MS);
+    } else {
+      _runSave();
+    }
+  });
 }
 
 function addCoins(n) {
   shopData.coins += n;
   coinsEarnedThisRun += n;
   coinsEl.textContent = shopData.coins;
-  saveShop();
+  saveShop({ debounce: true });
 }
+
+// Merged remote progress that arrived before this script ran.
+if (window._remoteShopData) window._applyRemoteShop();
 
 // ── Skin Drawing ──────────────────────────────────────────────────────────────
 function drawBasketSkin(c, x, y, w, h, skinId) {
@@ -6120,17 +6222,19 @@ window.startGame = function() {
 
 // ── Save-on-exit ──────────────────────────────────────────────────────────────
 // When the player leaves (closes the tab, switches app, navigates away), flush
-// everything to Supabase before the page is torn down. `keepalive` keeps the
-// requests alive through unload; running this only once avoids duplicate writes.
+// everything before the page is torn down or suspended. Progress goes out as a
+// beacon (see apiBeaconProgress); running this only once avoids duplicate writes.
 let _exitFlushed = false;
 function flushOnExit() {
   if (_exitFlushed) return;
   _exitFlushed = true;
 
-  // 1. Persist the latest progress (coins + all skins).
+  // 1. Persist the latest progress (coins + all skins), skipping the debounce.
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
   safeStorageSet('thinkFastShop', JSON.stringify(shopData));
-  if (window._apiSaveProgress && window._remoteLoaded) {
-    window._apiSaveProgress(shopData, { keepalive: true });
+  if (_shopDirty && window._apiBeaconProgress && window._remoteLoaded) {
+    window._apiBeaconProgress(shopData);
   }
 
   // 2. If a game is mid-run (no Game Over yet), record it as a session so the
@@ -6157,11 +6261,19 @@ document.addEventListener('visibilitychange', () => {
     if (running && !paused) togglePause();
     flushOnExit();
   } else {
-    // Returned to the game — re-arm so the next exit flushes again.
-    _exitFlushed = false;
+    onReturnToGame();
   }
 });
 window.addEventListener('pagehide', flushOnExit);
+window.addEventListener('pageshow', e => { if (e.persisted) onReturnToGame(); });
+
+// Returned to the game (or restored from bfcache) — re-arm so the next exit
+// flushes again. A beacon's result is unknown, and a PUT cut off by iOS
+// suspending the page may land after it, so re-save anything still unconfirmed.
+function onReturnToGame() {
+  _exitFlushed = false;
+  if (_shopDirty && window._remoteLoaded) saveShop();
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 coinsEl.textContent = shopData.coins;
