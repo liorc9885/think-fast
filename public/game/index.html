@@ -5865,13 +5865,16 @@ const BONUS_EVENT_MINUTES = 10;
 function isBonusEvent() {
   return new Date().getMinutes() < BONUS_EVENT_MINUTES;
 }
+// Cached event state, refreshed every ~30 frames by updateBonusBanner().
+let bonusActive = isBonusEvent();
 function pointsMult() {
   return isBonusEvent() ? 2 : 1;
 }
 function updateBonusBanner() {
+  bonusActive = isBonusEvent();
   const el = document.getElementById('bonus-banner');
   if (!el) return;
-  const on = isBonusEvent();
+  const on = bonusActive;
   el.style.display = on ? 'block' : 'none';
   if (on) {
     const left = BONUS_EVENT_MINUTES - 1 - new Date().getMinutes();
@@ -5889,11 +5892,11 @@ function checkLevel() {
   }
 }
 
-// ── Frenzy mode: from level 5 the game goes wild with beautiful lights ───────
-const FRENZY_LEVEL = 5;
+// ── Frenzy mode: lights only during the bonus event, stronger at higher levels ─
 let frenzyLights = [];
 function frenzyAmount() {
-  return level >= FRENZY_LEVEL ? Math.min(1, 0.35 + (level - FRENZY_LEVEL) * 0.13) : 0;
+  if (!bonusActive) return 0;
+  return Math.min(1, 0.35 + (level - 1) * 0.13);
 }
 function updateFrenzy() {
   const f = frenzyAmount();
