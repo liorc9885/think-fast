@@ -691,7 +691,7 @@
 <h1>🍔 המבורגר נופל! 🍔</h1>
 
 <div id="hud">
-  <span>⭐ <span id="hud-name">סי</span>: <b id="score-display">0</b></span>
+  <span>⭐ <span id="hud-name">שיא</span>: <b id="score-display">0</b></span>
   <span>❤️ חיים: <b id="lives-display">3</b></span>
   <span>⚡ רמה: <b id="level-display">1</b></span>
   <span id="coins-hud">🪙 מטבעות: <b id="coins-display">0</b></span>
@@ -774,7 +774,7 @@
     </div>
     <div id="leaderboard-tabs">
       <button class="lb-tab" data-board="items" onclick="setLeaderboardBoard('items')">🎒 פריטים</button>
-      <button class="lb-tab active" data-board="score" onclick="setLeaderboardBoard('score')">🏆 סי</button>
+      <button class="lb-tab active" data-board="score" onclick="setLeaderboardBoard('score')">🏆 שיא</button>
       <button class="lb-tab" data-board="coins" onclick="setLeaderboardBoard('coins')">🪙 כסף</button>
     </div>
     <div id="leaderboard-list"></div>
@@ -3855,10 +3855,10 @@ function toggleNameForm(show) {
   if (open) document.getElementById('leaderboard-name-input').focus();
 }
 
-// HUD label next to the star: the player's saved name, "סי" until they set one.
+// HUD label next to the star: the player's saved name, "שיא" until they set one.
 function updateHudName() {
   const el = document.getElementById('hud-name');
-  if (el) el.textContent = shopData.displayName || 'סי';
+  if (el) el.textContent = shopData.displayName || 'שיא';
 }
 
 function updateNameToggleLabel() {
